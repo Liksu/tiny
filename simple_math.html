@@ -1,0 +1,219 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Simple math tasks</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            font-size: 8vmin;
+            font-family: sans-serif;
+            word-break: keep-all;
+            text-align: center;
+            height: 84vh;
+            margin-top: 15vh;
+        }
+
+        span {
+            padding: 0 .1em;
+        }
+
+        input {
+            font-size: inherit;
+            width: 20vmin;
+            background-color: lightyellow;
+            border: 0;
+            padding: .1em;
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            /* display: none; <- Crashes Chrome on hover */
+            -webkit-appearance: none;
+            margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+        }
+
+        input[type=number] {
+            -moz-appearance:textfield; /* Firefox */
+        }
+
+        input.error {
+            color: darkred;
+            background-color: lightpink;
+        }
+
+        input.correct {
+            color: darkgreen;
+            background-color: white;
+        }
+
+        button {
+            font-size: 10vmin;
+            background-color: lightblue;
+            padding: 0.1em 0.25em;
+        }
+
+        .fire {
+            position: absolute;
+            font-size: 1em;
+            color: yellow;
+            background: transparent;
+            border: 0;
+            line-height: 1em;
+        }
+    </style>
+</head>
+<body>
+    <span id="task"></span>
+    <span>=</span>
+    <label>
+        <input type="number" id="result">
+    </label>
+    <p><button>проверить</button></p>
+</body>
+
+<script>
+    function rand([min, max]) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function oneOf(items) {
+        return items[rand([0, items.length - 1])];
+    }
+
+    function calc(src) {
+        return eval(src.join(''));
+    }
+
+    function generate(length, range, signs) {
+        const src = [];
+        Array.from({length}, () => src.push(rand(range), oneOf(signs)));
+        src.pop();
+        return src;
+    }
+
+    function check(src, [min, max]) {
+        const result = calc(src);
+        return result >= min && result <= max;
+    }
+
+    const [task, result, button] = document.querySelectorAll('#task, #result, button');
+
+    const range = [1, 20]; // numbers in task limit
+    const signs = ['+', '-']; // signs in task
+    let length = 3; // count of numbers in task if lengthRange falsee
+    const resultRange = [0, 12]; // result value limit
+    const lengthRange = [2, 4]; // range of count of numbers in task
+
+    if (lengthRange) {
+        length = rand(lengthRange);
+    }
+
+    // document.body.style.setProperty('font-size', (100 / (length * 2 + length)) + 'vmin');
+
+    let expected = 0;
+
+    let taskSrc = generate(length, range, signs);
+
+    if (resultRange) {
+        while (!check(taskSrc, resultRange)) {
+            taskSrc = generate(length, range, signs);
+        }
+    }
+
+    task.innerText = taskSrc.join(' ');
+    result.value = '';
+
+    const correct = calc(taskSrc);
+
+    result.addEventListener('change', validate, false);
+    button.addEventListener('click', validate, false);
+
+    function validate(e) {
+        const value = result.value;
+        const isCorrect = (e.ctrlKey && e.altKey) || value == correct;
+
+        result.className = '';
+        if (isCorrect) {
+            result.classList.add('correct');
+            button.remove();
+            result.removeEventListener('change', validate);
+            result.setAttribute('disabled', true);
+
+            firework();
+        } else {
+            result.classList.add('error');
+        }
+    }
+
+    let fires = [];
+    const g = 9.82;
+
+    function firework() {
+        fires = Array.from({length: 12}, () => {
+            const fire = document.createElement('p');
+
+            fire.classList.add('fire');
+            fire.innerText = oneOf(['🎇', '✨', '🌟', '⭐']);
+            fire.style.color = oneOf('red orange green blue'.split(' '));
+
+            fire.style.left = `calc(${window.innerWidth / 2}px - 0.5em)`;
+            fire.style.bottom = '.5em';
+
+            document.body.appendChild(fire);
+
+            const left = parseFloat(getComputedStyle(fire).left);
+            const top = parseFloat(getComputedStyle(fire).top);
+            const height = fire.offsetHeight;
+            const ttl = rand([150, 180]);
+            const speed = rand([8, 12]);
+            const alpha = rand([60, 120]);
+
+            const vx = (speed / 3) * Math.cos(alpha * (Math.PI / 180));
+            const vy = speed * Math.sin(alpha * (Math.PI / 180));
+
+            return {
+                el: fire,
+                x: left,
+                y: top,
+                height,
+                ttl,
+                speed,
+                vx,
+                vy
+            };
+        });
+
+        requestAnimationFrame(moveFire);
+    }
+
+    function moveFire() {
+        fires = fires.filter(fire => {
+            fire.vy += -g / 100;
+
+            fire.x += fire.vx;
+            fire.y -= fire.vy;
+
+            fire.el.style.top = fire.y + 'px';
+            fire.el.style.left = fire.x + 'px';
+
+            if ((fire.y - fire.height) > window.innerHeight) fire.ttl = 0;
+            else --fire.ttl;
+
+            return fire.ttl || fire.el.remove();
+        });
+
+        if (fires.length) requestAnimationFrame(moveFire);
+    }
+</script>
+</html>

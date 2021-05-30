@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shulte</title>
+    <style>
+        :root {
+            --part: 20vmin;
+            --size: 5;
+            --font-size: 10vmin;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(var(--size), var(--part));
+            grid-auto-rows: var(--part);
+        }
+        .cell {
+            margin: 0;
+            padding: 0;
+            font-weight: bold;
+            font-size: var(--font-size);
+            border: 1px solid silver;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        h1,
+        .break,
+        .grid:not(:first-child) {
+            display: none;
+        }
+
+        @media print {
+            h1 {
+                display: grid;
+                text-align: center;
+                grid-column: 1 / -1;
+                grid-template-rows: 5rem;
+                align-items: end;
+            }
+
+            .break {
+                page-break-after: always;
+                clear: both;
+                display: block;
+            }
+
+            .grid {
+                display: grid !important;
+            }
+        }
+    </style>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const size = urlParams.get('size') || 5;
+            const count = +urlParams.get('count') || 1;
+            const square = size ** 2;
+            const letters = Math.max(String(square).length * size, 6);
+
+            const root = document.documentElement;
+            root.style.setProperty('--size', size);
+            root.style.setProperty('--part', (100 / size).toFixed(1) + 'vmin');
+            root.style.setProperty('--font-size', (100 / letters).toFixed(1) + 'vmin');
+
+            Array.from(Array(count).keys()).forEach(i => {
+                const grid = document.createElement('div');
+                grid.classList.add('grid');
+                document.body.appendChild(grid);
+
+                Array.from(Array(square).keys())
+                    .sort((a, b) => Math.random() - 0.5)
+                    .forEach(n => {
+                        const cell = document.createElement('div');
+                        cell.innerHTML = n + 1;
+                        cell.classList.add('cell');
+                        grid.appendChild(cell);
+                    });
+
+                const h1 = document.createElement('h1');
+                h1.innerHTML = `1 &rarr; ${square}`;
+                grid.appendChild(h1);
+
+                if (i < count - 1) {
+                    const pageBreak = document.createElement('div');
+                    pageBreak.classList.add('break');
+                    document.body.appendChild(pageBreak);
+                }
+            });
+        });
+    </script>
+</head>
+<body></body>
+</html>

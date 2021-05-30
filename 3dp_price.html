@@ -1,0 +1,734 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>3D print model cost</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.9/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.9/angular-sanitize.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+            integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+            integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+            integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+            crossorigin="anonymous"></script>
+    <style>
+        .input-group-append {
+            align-items: flex-start;
+        }
+
+        .form-group.row.slim {
+            margin-bottom: 0.25rem;
+        }
+
+        code {
+            color: dodgerblue;
+        }
+    </style>
+</head>
+<script>
+    const dictionary = {
+        ru: {
+            '3D Printing Cost': 'Стоимость 3D печати',
+            '3D Printing Cost Calculator': 'Калькулятор стоимости 3D печати',
+            'Bills': 'Счета',
+            'Consumables': 'Содержание',
+            'Cost of 1g': 'Стоимость 1г',
+            'Cost of electricity per hour': 'Стоимость электричества в час',
+            'Cost of rent per hour': 'Стоимость аренды за час',
+            'Cost': 'Стоимость',
+            'Count in order': 'Количество в заказе',
+            'Currency sign': 'Символ валюты',
+            'Currency': 'Валюта',
+            'Damage': 'Брак',
+            'Delivery': 'Доставка',
+            'Depreciation': 'Амортизация',
+            'Electricity Cost': 'Стоимость электричества',
+            'Extra Cost': 'Наценка',
+            'General': 'Общие',
+            'Help': 'Помощь',
+            'Including Damage': 'Включая брак',
+            'Interface language': 'Язык интерфейса',
+            'Language': 'Язык',
+            'Model Cost': 'Стоимость модели',
+            'Model weight': 'Вес модели',
+            'Model': 'Модель',
+            'Filament Name': 'Название пластика',
+            'Filament Order Cost': 'Стоимость заказа пластика',
+            'Filament': 'Пластик',
+            'Filaments': 'Пластики',
+            'Power': 'Мощность',
+            'Prime Cost': 'Себестоимость',
+            'Print duration': 'Время печати',
+            'Print Result': 'Печать результата',
+            'Printer': 'Принтер',
+            'Profit': 'Выгода',
+            'Real Print Time': 'Реальное время печати',
+            'Rent': 'Аренда',
+            'Retail Price': 'Розничная цена',
+            'Settings': 'Настройки',
+            'Slowdown': 'Замедление',
+            'Time Cost': 'Стоимость времени',
+            'Toggle All': 'Переключить всё',
+            'Total': 'Итого',
+            'Weight in one box': 'Вес в одной упаковке',
+            'Weight': 'Вес',
+            'Work In Month': 'Работа в месяц',
+            'boxes': 'шт',
+            'g': 'г',
+            'hours': 'час.',
+            'minutes': 'минут',
+
+            'Amount of hour that printer works in month': 'Количество часов работы принтера в месяц',
+            'And put here the cost of delivery of the order. Let it zero if delivery not needed': 'А сюда стоимость доставки заказа. Поставьте 0, если доставка не нужна',
+            'Check the cost of one coil. Correct it into settings if needed': 'Проверьте цену катушки. Если нужно, поправьте в разделе <code>Настройки</code>',
+            'Check the weight of filament in coil. Correct it into settings if needed': 'Проверьте вес пластика в катушке. Если нужно, поправьте в разделе <code>Настройки</code>',
+            'Coefficient of earnings. Put 1 or 0 to get <code>Retail Price</code> without any profit.': 'Коэффициент прибыли. Поставьте 1 или 0, чтобы получить <code>Розничная цена</code> без прибыли',
+            'Coefficient to correct predicted print time': 'Коэффициент корректировки прогнозируемого времени печати',
+            'Cost of 1 kW•h': 'Стоимость 1 кВт•ч',
+            'Cost of electricity for the one hour of printing. Depends on <code>Bills / Electricity Cost</code>': 'Стоимость электроэнергии за час печати. Зависит от <code>Счета / Стоимости электричества</code>',
+            'Cost of the rent for one hour of printing during the month. Depends on <code>General / Work In Month</code> value': 'Стоимость аренды одного часа печати в месяц. Зависит от значения <code>Общие / Работа в месяц</code>',
+            'Defect rate based on statistics': 'Уровень брака на основе статистики',
+            'Including depreciation, consumables and profit': 'Включая амортизацию, расходные материалы и прибыль',
+            'List of available filaments to print with. Each filament means a single coil with certain weight and cost': 'Список доступных для печати пластиков. Каждая позиция описывает одну катушку с указанием её цены и веса пластика в ней',
+            'Percentage of income you should spend on printer depreciation': 'Процент дохода, который вы должны потратить на амортизацию принтера',
+            'Percentage of income you should spend on printer supplies (excluding filament)': 'Процент дохода, который вы должны потратить на расходные материалы для принтера (за исключением пластика)',
+            'Printer\'s power per hour': 'Мощность принтера в час',
+            'Put here the amount of coils in order. Or 1 unless no need the delivery calculation': 'Введите количество катушек в заказе. Или 1, если не требуется расчет доставки',
+            'Put here the cost of the rent of your office that you spent in month. Consider that not only one printer can be in your office, so split the rent for all sources of money.': 'Укажите стоимость аренды вашего офиса за месяц. Учтите, что в офисе может быть не только один принтер, поэтому разделите арендную плату на все источники дохода',
+            'Select filament to use': 'Выберите пластик для печати',
+            'The cost of 1g of filament including damage coefficient. Depends on <code>General / Damage</code>': 'Стоимость 1 грамма пластика с учетом коэффициента брака. Зависит от <code>Общие / Брак</code>',
+            'To calculate correct cost of 1g of filament you need to calculate also the delivery cost:': 'Для расчета правильной стоимости 1г пластика необходимо также рассчитать стоимость доставки:',
+        },
+        en: {
+            'hours': 'hr',
+            'minutes': 'min'
+        }
+    };
+
+    function extendFromURL(main) {
+        const params = new URLSearchParams(window.location.search);
+        params.forEach((value, key) => {
+            const isNotBoolean = value !== 'false' && value !== 'true';
+            const isNotNumber = isNaN(parseFloat(value)) || /[^\d.e-]/i.test(value);
+            if (isNotBoolean && isNotNumber) value = `"${value}"`;
+            new Function('main', `main.${key} = ${value}`)(main);
+        });
+    }
+
+    function loadFromStore(main) {
+        const config = localStorage.getItem('config');
+        if (config) main.config = JSON.parse(config);
+
+        const data = localStorage.getItem('data');
+        if (data) main.data = JSON.parse(data);
+
+        const selected = main.data.filament.selected
+        main.data.filament.selected = main.config.filaments.find(filament => filament.name == selected.name && filament.weight == selected.weight && filament.cost == selected.cost) || selected
+    }
+
+    function saveToStorage(main) {
+        const toJSON = (data) => JSON.stringify(data)
+            .replaceAll(/"\$\$hashKey":".+?",?/g, '')
+            .replaceAll(/,}/g, '}');
+
+        localStorage.setItem('config', toJSON(main.config));
+        localStorage.setItem('data', toJSON(main.data));
+    }
+
+    function flatten(data, dataKey) {
+        const result = {};
+
+        function runner(data, parentKey) {
+            Object.keys(data).forEach(key => {
+                if (key == '$$hashKey') return;
+                if (typeof data[key] == 'function') return;
+                const storeKey = data instanceof Array ? `${parentKey}[${key}]` : `${parentKey}.${key}`;
+                if (typeof data[key] != 'object') {
+                    result[storeKey] = typeof data[key] === 'number' && !Number.isInteger(data[key]) ? data[key].toFixed(3) : data[key];
+                } else {
+                    runner(data[key], storeKey);
+                }
+            });
+        }
+
+        runner(data[dataKey], dataKey);
+        return result;
+    }
+
+    function toURL(main) {
+        const params = {
+            ...flatten(main, 'data'),
+            ...flatten(main, 'config')
+        };
+        const url = (location.href.replace(location.search, '') + '?' + new URLSearchParams(params).toString());
+        if (url != location.href) window.history.pushState({}, "Calculation", url);
+    }
+
+    function printURL(main) {
+        const params = {
+            ...flatten(main, 'data'),
+            ...flatten(main, 'config')
+        };
+
+        const keys = [
+            'config.lang',
+            'data.filament.selected.name',
+            'data.model.weight',
+            'data.total.retail',
+            'config.currency',
+        ];
+
+        const printParams = Object.fromEntries(Object.entries(params).filter(([key]) => keys.includes(key)));
+        printParams.only = 'print';
+        printParams['data.model.duration'] = main.data.model.duration.toString();
+        const url = (location.href.replace(location.search, '') + '?' + new URLSearchParams(printParams).toString());
+        window.open(url, '_blank')
+    }
+
+    angular.module('3DPApp', ['ngSanitize'])
+        .filter('t', function () {
+            return function (text, lang) {
+                if (!dictionary[lang][text]) console.warn('Unknown translation:', text)
+                return dictionary[lang] && dictionary[lang][text] || text;
+            }
+        })
+        .controller('MainController', ['$scope', function ($scope) {
+            const main = this;
+            main.only = false;
+
+            main.config = {
+                help: false,
+                lang: (navigator.language || navigator.userLanguage || 'en').slice(0, 2),
+                currency: '₴',
+                filaments: [
+                    {name: 'PLA', cost: 260, weight: 500},
+                    {name: 'ABS', cost: 163, weight: 500},
+                ],
+                filamentCount: 4,
+                damage: 1.3,
+                rent: 200,
+                hours: 180,
+                electricityCost: 1.68,
+                extra: 2,
+                printer: {
+                    power: 0.3,
+                    slowdown: 1.25,
+                    consumables: 3,
+                    depreciation: 10
+                }
+            };
+
+            main.data = {
+                filament: {
+                    selected: main.config.filaments[0],
+                    delivery: 40,
+                },
+                model: {
+                    weight: 130,
+                    hours: 9,
+                    minutes: 45
+                },
+                bills: {
+                    rentHour: 0
+                },
+                total: {
+                    cost: 0,
+                    retail: 0,
+                    timeCost: 0
+                }
+            };
+
+            loadFromStore(main);
+            extendFromURL(main);
+
+            main.help = () => {
+                main.config.help = !main.config.help;
+            };
+
+            main.removeFilament = (i) => {
+                if (main.data.filament.selected.name === main.config.filaments[i].name) {
+                    main.data.filament.selected = main.config.filaments[i - 1] || main.config.filaments[i + 1]
+                }
+                main.config.filaments.splice(i, 1);
+            }
+
+            main.addFilament = () => {
+                main.config.filaments.push({});
+            }
+
+            main.print = () => {
+                printURL(main)
+            }
+
+            main.copy = obj => {
+                cp = {};
+                Object.keys(obj).filter(key => !/^\$\$/.test(key)).forEach(key => {
+                    cp[key] = obj[key];
+                });
+                return cp;
+            };
+            window.main = main;
+
+            $scope.$watch('main', () => {
+                $scope.$broadcast('lang.check');
+                if (main.only === 'print') return;
+                let filamentCount = main.config.filamentCount || 1;
+
+                main.data.filament.price = main.data.filament.selected.cost * filamentCount + main.data.filament.delivery;
+                main.data.filament.gCost = main.data.filament.price / (main.data.filament.selected.weight * filamentCount);
+                main.data.filament.gPrice = main.data.filament.gCost * (main.config.damage / 100 + 1);
+                main.data.bills.rentHour = main.config.rent / main.config.hours;
+                main.data.bills.electricityHour = main.config.printer.power * main.config.electricityCost;
+                main.data.bills.hourCost = main.data.bills.rentHour + main.data.bills.electricityHour;
+                main.data.total.modelCost = main.data.filament.gPrice * main.data.model.weight;
+
+                const realMinutes = (main.data.model.hours * 60 + main.data.model.minutes) * main.config.printer.slowdown;
+                main.data.model.duration = {
+                    realMinutes,
+                    hours: Math.floor(realMinutes / 60),
+                    minutes: Math.ceil(realMinutes % 60),
+                    toString: function () {
+                        return this.hours + ':' + String(this.minutes).padStart(2, '0');
+                    }
+                };
+
+                main.data.total.timeCost = (main.data.bills.hourCost / 60) * realMinutes;
+
+                main.data.total.cost = main.data.total.timeCost + main.data.total.modelCost;
+                const printerExtra = (main.config.printer.consumables + main.config.printer.depreciation) / 100;
+                main.data.total.retail = main.data.total.cost * (printerExtra + (main.config.extra || 1));
+                main.data.total.profit = main.data.total.retail - main.data.total.cost * (printerExtra + 1);
+
+                if (!main.only) {
+                    saveToStorage(main);
+                    toURL(main)
+                }
+            }, true);
+
+        }])
+        .directive('t', function() {
+            return {
+                restrict: 'A',
+                link: function (scope, element) {
+                    const text = element[0].innerHTML.replace(/^\s+/gm, '').replace(/\n/gms, ' ').trim();
+                    scope.$on('lang.check', function (event) {
+                        const lang = event.targetScope.main.config.lang;
+                        if (!dictionary[lang][text]) console.warn('Unknown translation:', text)
+                        console.log({text})
+                        element[0].innerHTML = dictionary[lang] && dictionary[lang][text] || text;
+                    })
+                }
+            }
+        })
+    ;
+</script>
+<body ng-app="3DPApp">
+<div class="container" ng-controller="MainController as main">
+    <div ng-if="main.only != 'cost' && main.only != 'print'">
+        <H2 t>3D Printing Cost Calculator</H2>
+
+        <hr>
+
+        <p ng-if="main.only != 'total'">
+            <a class="btn btn-secondary" data-toggle="collapse" href="#collapseFilament" role="button"
+               aria-expanded="false" aria-controls="collapseFilament">
+                {{'Filament' | t : main.config.lang}} {{main.data.filament.selected.name}}
+            </a>
+
+            <a class="btn btn-secondary" data-toggle="collapse" href="#collapseBills" role="button"
+               aria-expanded="false" aria-controls="collapseBills" t>Bills</a>
+
+            <a class="btn btn-secondary" data-toggle="collapse" href="#collapsePrinter" role="button"
+               aria-expanded="false" aria-controls="collapsePrinter" t>Printer</a>
+
+            <a class="btn btn-secondary" data-toggle="collapse" href="#collapseGeneral" role="button"
+               aria-expanded="false" aria-controls="collapseGeneral" t>General</a>
+
+            <span class="btn btn-outline-info btn-sm float-right" data-toggle="collapse" data-target=".collapse"
+                  role="button" aria-expanded="false" aria-controls="collapsePrinter collapseBills collapseFilament" t>Toggle All</span>
+
+            <span class="btn btn-outline-info btn-sm float-right" ng-click="main.help()" t>Help</span>
+
+            <span class="btn btn-outline-info btn-sm float-right" ng-click="main.print()" t>Print Result</span>
+
+            <a class="btn btn-outline-info btn-sm float-right" data-toggle="collapse" href="#collapseSettings"
+               role="button"
+               aria-expanded="false" aria-controls="collapseSettings" t>Settings</a>
+        </p>
+        <hr>
+        <form>
+            <div class="collapse" id="collapseSettings">
+                <div class="row">
+                    <h3 class="pl-3" t>Settings</h3>
+                </div>
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Language</label>
+                    <div class="col-md-2 col-6">
+                        <select ng-model="main.config.lang" class="form-control">
+                            <option ng-repeat="lang in [['ru', 'Русский'], ['en', 'English']]" ng-value="lang[0]">{{lang[1]}}</option>
+                        </select>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Interface language</small>
+                </div>
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Currency</label>
+                    <div class="col-md-2 col-6">
+                        <select ng-model="main.config.currency" class="form-control">
+                            <option ng-repeat="curr in ['₴', '₽', '$']" ng-value="curr">{{curr}}</option>
+                        </select>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Currency sign</small>
+                </div>
+                <div class="row slim">
+                    <label class="col-md-2 col-6 col-form-label" t>Filaments</label>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6 offset-md-2" t>List of available filaments to print with. Each filament means a single coil with certain weight and cost</small>
+                </div>
+                <div class="form-group row col-md-6 slim">
+                    <span class="col-md-5" t>Filament Name</span>
+                    <span class="col-md-3" t>Weight</span>
+                    <span class="col-md-3" t>Cost</span>
+                </div>
+                <div class="form-group row col-md-6 slim" ng-repeat="filament in main.config.filaments">
+                    <input type="text" class="col-md-5" ng-model="filament.name"/>
+                    <input type="number" class="col-md-3" ng-model="filament.weight"/>
+                    <input type="number" class="col-md-3" ng-model="filament.cost"/>
+                    <button type="button" class="btn col-md-1" name="remove_filament" ng-click="main.removeFilament($index)" ng-if="main.config.filaments.length > 1">➖</button>
+                </div>
+                <button type="button" class="btn" name="add_filament" ng-click="main.addFilament()">➕</button>
+                <hr>
+            </div>
+
+            <div class="collapse" id="collapseFilament">
+                <div class="row">
+                    <h3 class="pl-3" t>Filament</h3>
+                </div>
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Filament</label>
+                    <div class="col-md-2 col-6">
+                        <select ng-model="main.data.filament.selected" class="form-control">
+                            <option ng-repeat="filament in main.config.filaments" ng-value="filament">{{filament.name}}
+                            </option>
+                        </select>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Select filament to use</small>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Cost</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.data.filament.selected.cost" class="form-control" aria-describedby="input-filament-cost" min="1" disabled>
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-filament-cost"
+                                  ng-bind-html="main.config.currency"></span>
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Check the weight of filament in coil. Correct it into settings if needed</small>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Weight in one box</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.data.filament.selected.weight" class="form-control" aria-describedby="input-box-weight" min="1" disabled>
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-box-weight" t>g</span>
+                            <!--  ng-pluralize count="main.config.filamentCount" when="{1: 'box', other: 'boxes'}" -->
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Check the cost of one coil. Correct it into settings if needed</small>
+                </div>
+
+                <small ng-if="main.config.help" class="form-text text-muted row" t>To calculate correct cost of 1g of filament you need to calculate also the delivery cost:</small>
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Count in order</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.config.filamentCount" class="form-control"
+                               aria-describedby="input-box" min="0">
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-box" t>boxes</span>
+                            <!--  ng-pluralize count="main.config.filamentCount" when="{1: 'box', other: 'boxes'}" -->
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Put here the amount of coils in order. Or 1 unless no need the delivery calculation</small>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Delivery</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.data.filament.delivery" class="form-control"
+                               aria-describedby="delivery-cost" min="0">
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-delivery-cost"
+                                  ng-bind-html="main.config.currency"></span>
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>And put here the cost of delivery of the order. Let it zero if delivery not needed</small>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3" t>Filament Order Cost</div>
+                    <div class="col-md-4">
+                        {{main.data.filament.price | currency : ''}} <span
+                            ng-bind-html="main.config.currency"></span><br>
+                        ( {{main.data.filament.selected.cost | currency : ''}} <span
+                            ng-if="main.config.filamentCount > 1">&times; {{main.config.filamentCount}}</span> +
+                        {{main.data.filament.delivery | currency : ''}} )
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3" t>Cost of 1g</div>
+                    <div class="col-md-1">{{main.data.filament.gCost | currency : ''}} <span
+                            ng-bind-html="main.config.currency"></span></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3" t>Including Damage</div>
+                    <div class="col-md-1">{{main.data.filament.gPrice | currency : ''}} <span
+                            ng-bind-html="main.config.currency"></span></div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>The cost of 1g of filament including damage coefficient. Depends on <code>General / Damage</code></small>
+                </div>
+
+                <hr>
+            </div>
+
+            <div class="collapse" id="collapseBills">
+                <div class="row">
+                    <h3 class="pl-3" t>Bills</h3>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Rent</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.config.rent" class="form-control"
+                               aria-describedby="input-rent">
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-rent" ng-bind-html="main.config.currency"></span>
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>
+                        Put here the cost of the rent of your office that you spent in month.
+                        Consider that not only one printer can be in your office, so split the rent for all sources of money.
+                    </small>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Electricity Cost</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.config.electricityCost" class="form-control"
+                               aria-describedby="input-electricity">
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-electricity"
+                                  ng-bind-html="main.config.currency"></span>
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Cost of 1 kW•h</small>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3" t>Cost of rent per hour</div>
+                    <div class="col-md-1">{{main.data.bills.rentHour | currency : ''}} <span
+                            ng-bind-html="main.config.currency"></span></div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Cost of the rent for one hour of printing during the month. Depends on <code>General / Work In Month</code> value</small>
+                </div>
+
+                <hr>
+            </div>
+
+            <div class="collapse" id="collapsePrinter">
+                <div class="row">
+                    <h3 class="pl-3" t>Printer</h3>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Power</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.config.printer.power" class="form-control"
+                               aria-describedby="input-power">
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-power">kW&bullet;h</span>
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Printer's power per hour</small>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Consumables</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.config.printer.consumables" class="form-control"
+                               aria-describedby="input-consumables">
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-consumables">%</span>
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Percentage of income you should spend on printer supplies (excluding filament)</small>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Depreciation</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.config.printer.depreciation" class="form-control"
+                               aria-describedby="input-depreciation">
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-depreciation">%</span>
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Percentage of income you should spend on printer depreciation</small>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Slowdown</label>
+                    <div class="col-md-2 col-6">
+                        <input type="number" ng-model="main.config.printer.slowdown" class="form-control">
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Coefficient to correct predicted print time</small>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3" t>Cost of electricity per hour</div>
+                    <div class="col-md-1">{{main.data.bills.electricityHour | currency : ''}} <span
+                            ng-bind-html="main.config.currency"></span></div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Cost of electricity for the one hour of printing. Depends on <code>Bills / Electricity Cost</code></small>
+                </div>
+
+                <hr>
+            </div>
+
+            <div class="collapse" id="collapseGeneral">
+                <div class="row">
+                    <h3 class="pl-3" t>General</h3>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Damage</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.config.damage" class="form-control" aria-describedby="input-damage">
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-damage">%</span>
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Defect rate based on statistics</small>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Work In Month</label>
+                    <div class="col-md-2 col-6 input-group">
+                        <input type="number" ng-model="main.config.hours" class="form-control"
+                               aria-describedby="input-hours">
+                        <div class="input-group-append">
+                            <span class="input-group-text" id="input-hours" t>hours</span>
+                        </div>
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Amount of hour that printer works in month</small>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-md-2 col-6 col-form-label" t>Extra Cost</label>
+                    <div class="col-md-2 col-6">
+                        <input type="number" ng-model="main.config.extra" class="form-control">
+                    </div>
+                    <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Coefficient of earnings. Put 1 or 0 to get <code>Retail Price</code> without any profit.</small>
+                </div>
+
+                <hr>
+            </div>
+
+
+            <div class="row">
+                <h3 class="pl-3" t>Model</h3>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-2 col-6 col-form-label" t>Model weight</label>
+                <div class="col-md-2 col-6 input-group">
+                    <input type="number" ng-model="main.data.model.weight" class="form-control"
+                           aria-describedby="input-gram">
+                    <div class="input-group-append">
+                        <span class="input-group-text" id="input-gram" t>g</span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-md-2 col-4 col-form-label" t>Print duration</label>
+                <div class="col-md-2 col-6 input-group">
+                    <input type="number" ng-model="main.data.model.hours" class="form-control"
+                           aria-describedby="input-model-hours">
+                    <div class="input-group-append">
+                        <span class="input-group-text" id="input-model-hours" t>hours</span>
+                    </div>
+                </div>
+                <div class="col-md-2 col-6 input-group">
+                    <input type="number" ng-model="main.data.model.minutes" class="form-control"
+                           aria-describedby="input-model-miutes">
+                    <div class="input-group-append">
+                        <span class="input-group-text"
+                              id="input-model-miutes" t>minutes</span>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <div class="row">
+            <h3 class="pl-3" t>Total</h3>
+        </div>
+        <div class="row text-info">
+            <div class="col-md-3" t>Real Print Time</div>
+            <div class="col-md-2 col-6">
+                {{main.data.model.duration}}
+            </div>
+        </div>
+        <div class="row text-muted" ng-if="main.config.help">
+            <div class="col-md-3" t>Time Cost</div>
+            <div class="col-md-2 col-6">
+                {{main.data.total.timeCost | currency : ''}} <span ng-bind-html="main.config.currency"></span>
+            </div>
+        </div>
+        <div class="row text-muted" ng-if="main.config.help">
+            <div class="col-md-3" t>Model Cost</div>
+            <div class="col-md-2 col-6">
+                {{main.data.total.modelCost | currency : ''}} <span ng-bind-html="main.config.currency"></span>
+            </div>
+        </div>
+        <div class="row text-muted" ng-if="main.config.help">
+            <div class="col-md-3" t>Prime Cost</div>
+            <div class="col-md-2 col-6">
+                {{main.data.total.cost | currency : ''}} <span ng-bind-html="main.config.currency"></span>
+            </div>
+        </div>
+        <div class="row text-success">
+            <div class="col-md-3" t>Retail Price</div>
+            <div class="col-md-1 col-6">
+                {{main.data.total.retail | currency : ''}} <span ng-bind-html="main.config.currency"></span>
+            </div>
+            <small ng-if="main.config.help" class="form-text text-muted col-md-6" t>Including depreciation, consumables and profit</small>
+        </div>
+        <div class="row text-muted" ng-if="main.config.help">
+            <div class="col-md-3" t>Profit</div>
+            <div class="col-md-2 col-6">
+                {{main.data.total.profit | currency : ''}} <span ng-bind-html="main.config.currency"></span>
+            </div>
+        </div>
+    </div>
+
+    <div ng-if="main.only == 'cost'">
+        {{main.data.total.retail | currency : ''}}
+    </div>
+
+    <div ng-if="main.only == 'print'">
+        <h3 class="row">{{'3D Printing Cost' | t : main.config.lang}}</h3>
+
+        <span class="row">{{'Filament' | t : main.config.lang}}: {{main.data.filament.selected.name}}</span>
+        <span class="row">{{'Model weight' | t : main.config.lang}}: {{main.data.model.weight}}</span>
+        <span class="row">{{'Real Print Time' | t : main.config.lang}}: {{main.data.model.duration}}</span>
+
+        <h5 class="row">{{'Retail Price' | t : main.config.lang}}: {{main.data.total.retail | currency : ''}} <span ng-bind-html="main.config.currency"></span></h5>
+    </div>
+</div>
+</body>
+</html>
