@@ -1,0 +1,97 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>deposit calculator</title>
+	<style>
+		body {font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"}
+		label {display: block}
+		input[type="number"] {width: 4em}
+		input#sum {width: 8em}
+	</style>
+</head>
+<body class="p-3">
+	<label>ставка по депозиту: <input type="number" id="rate" value="17" tabstop=1>%</label><br>
+	<label>количество месяцев: <input type="number" id="months" value="3" tabstop=2></label><br>
+	<label>налоги: <input type="number" id="taxes" value="19.5" tabstop=3>%</label><br>
+	<label>сумма депозита: <input type="number" id="sum" value="10000" tabstop=4></label><br>
+	<label><input type=checkbox id="simple" tabstop=5> выплачивать процент на карту ежемесячно</label><br>
+	<hr>
+	<p>доход: <span id="income">0</span></p>
+	<p>налоги: <span id="taxpay">0</span></p>
+	<p>прибыль: <span id="profit">0</span></p>
+	<p id="ppm">в месяц: <span id="profitpermonth">0</span></p>
+	<p>сумма с процентами: <span id="total">0</span></p>
+	<p>реальный процент: <span id="real">0</span>%</p>
+</body>
+<script>
+	const el = {};
+	'rate months taxes sum simple income taxpay profit ppm profitpermonth total real'.split(' ').forEach(name => el[name] = document.getElementById(name));
+
+	document.addEventListener('keyup', recalc);
+	document.addEventListener('blur', recalc);
+	document.addEventListener('change', recalc);
+
+	const numberFormat = new Intl.NumberFormat('uk', {maximumFractionDigits: 2, minimumFractionDigits: 2});
+	const query = new URLSearchParams(window.location.search);
+
+	function recalc() {
+		const v = {
+			rate: (+el.rate.value || 1) / 100,
+			months: +el.months.value || 1,
+			taxes: +el.taxes.value || 0,
+			sum: +el.sum.value || 1,
+			simple: el.simple.checked
+		};
+
+		set(v);
+
+		const r = {};
+
+		if (v.simple) {
+			r.income = v.sum * v.rate / 365 * (v.months * 30 - 2);
+		} else {
+			r.income = v.sum * Math.pow(1 + v.rate / 12, v.months) - v.sum;
+		}
+
+		r.taxpay = r.income * (v.taxes / 100);
+		r.profit = r.income - r.taxpay;
+		r.profitpermonth = r.profit / v.months;
+		r.total = r.profit + v.sum;
+		r.real = (r.profit / v.sum) * 100;
+
+		Object.entries(r).forEach(([k, v]) => {
+			el[k].innerHTML = numberFormat.format(v).replace(/ /g, "'");
+		});
+
+		el.ppm.style.display = v.simple ? 'block' : 'none';
+		console.log({el, v, r});
+	}
+
+	function set(values) {
+		Object.entries(values).forEach(([key, value]) => {
+			if (key === 'rate') value = value * 100;
+			query.set(key, String(value));
+		});
+
+		const path = window.location.origin + window.location.pathname + '?' + query.toString();
+		window.history.pushState({path}, '', path);
+	}
+
+	function reset() {
+		[...query.keys()].filter(key => el[key] instanceof HTMLInputElement).forEach(key => {
+			if (key === 'simple') {
+				el[key].checked = query.get(key) === 'true';
+			} else {
+				el[key].value = query.get(key);
+			}
+		});
+	}
+
+	reset();
+	recalc();
+</script>
+</html>
