@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+          name="viewport">
+    <meta content="ie=edge" http-equiv="X-UA-Compatible">
+    <title>Menu Planner</title>
+    <style>
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        body {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 35% 65%;
+            grid-gap: 0;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            font-family: sans-serif;
+            font-size: 9px;
+        }
+
+        body.left {
+            --col-width: calc(100vw / (var(--days-in-week) + 1));
+            grid-template-columns: calc(var(--col-width) + 1em) auto;
+            grid-template-rows: 1fr;
+        }
+
+        body.top {}
+
+        .meals {
+            align-self: flex-start;
+            display: flex;
+        }
+
+        .left .meals {
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .meal-category {
+            padding: 4px;
+        }
+
+        .meal-category .category-title {
+            font-weight: bold;
+        }
+
+        .meal-category .category-container {
+        }
+
+        .left .meal-category.collapsed .category-container {
+            display: none;
+        }
+
+        .left .meal-category .category-title {
+            cursor: pointer;
+            font-size: 1.25em;
+        }
+
+        .meal {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            padding: 2px 6px;
+            border: 1px dotted silver;
+            border-radius: 12px;
+            background-color: #EEE;
+            /* margin-right: 0.75em; */
+            cursor: move;
+            margin-bottom: 1px;
+        }
+
+        .meal .icon {
+            width: 64px;
+            height: 64px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+        }
+
+        .meal .icon img {
+            width: 60px;
+            height: 60px;
+        }
+
+        .meal .title {
+            font-size: 3em;
+        }
+
+        .calendar {
+            --days-in-week: 7;
+            display: grid;
+            grid-template-columns: repeat(var(--days-in-week), 1fr);
+            grid-column-gap: 0;
+            grid-row-gap: 0;
+        }
+
+        .day {
+            border: 1px solid hsl(203deg 92% 75% / 50%);
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: calc(2em + 4px) repeat(3, 1fr);
+        }
+
+        .day-title {
+            background-color: lightskyblue;
+            font-size: 1.5em;
+            padding: 4px 10px;
+        }
+
+        .day-date {
+            float: right;
+            font-weight: bold;
+            color: white;
+        }
+
+        .eat {
+            border-top: 1px dashed silver;
+            position: relative;
+        }
+
+        .eat .title {
+            padding: 4px;
+            position: absolute;
+            width: calc(100% - 8px);
+            height: 1em;
+        }
+
+        .eat .title:before {
+            content: "› ";
+        }
+
+        .breakfast.eat {
+            border-top: 0;
+        }
+
+        .breakfast .title {
+            background-color: lightcyan;
+        }
+
+        .lunch .title {
+            background-color: #eeffee;
+        }
+
+        .dinner .title {
+            background-color: lightgoldenrodyellow;
+        }
+
+        .placeholder {
+            margin-top: 1.5em;
+            width: calc(100% - 16px);
+            height: calc(100% - 1.5em - 8px);
+            padding: 4px 8px;
+        }
+
+        .placeholder .meal {
+            margin-right: 0;
+            /*cursor: unset;*/
+        }
+
+        .placeholder .meal .icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .placeholder .meal .icon img {
+            width: 12px;
+            height: 12px;
+        }
+
+        .placeholder .meal .title {
+            background-color: inherit;
+            position: unset;
+            width: unset;
+        }
+
+        .placeholder .meal .title:before {
+            content: '';
+            display: none;
+        }
+
+        .color1  {background-color: #cdf7f0}
+        .color2  {background-color: #d6ca98}
+        .color3  {background-color: #d1f0b1}
+        .color4  {background-color: #b6cb9e}
+        .color5  {background-color: #92b4a7}
+        .color6  {background-color: #ab92bf}
+        .color7  {background-color: #afc1d6}
+        .color8  {background-color: #69fff1}
+        .color9  {background-color: #63d471}
+        .color10 {background-color: #63a46c}
+        .color11 {background-color: #655a7c}
+        .color12 {background-color: #8c8a93}
+        .color13 {background-color: #81667a}
+        .color14 {background-color: #6a7152}
+        .color15 {background-color: #233329}
+
+
+        .placeholders {
+            padding: 4px;
+        }
+
+        .placeholders > * {
+            width: calc(calc(100vw - 7 * 40px) / 21);
+            height: calc(calc(100vw - 7 * 40px) / 21);
+            display: inline-block;
+            border: 1px dotted pink;
+            background-color: hsl(351deg 100% 86% / 20%);
+            border-radius: 12px;
+        }
+
+        @media print {
+            body {
+                grid-template-rows: 100%;
+            }
+
+            body.left {
+                grid-template-columns: unset;
+                grid-template-rows: unset;
+            }
+
+            .meals {
+                display: none;
+            }
+
+            body.bw .day-title {
+                background-color: silver;
+            }
+
+            body.bw .day {
+                border-color: hsl(0, 0%, 80%);
+            }
+
+            body.bw .eat .title {
+                background-color: hsl(0, 0%, 90%);
+            }
+
+            body.bw .meal {
+                background-color: white !important;
+                border: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+</body>
+
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/react@17/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js" crossorigin></script>
+
+
+<script type="text/babel">
+    const config = {
+        dataUrl: 'https://docs.google.com/spreadsheets/u/0/d/1E0I42dpjynzPcg3R9jXpqXvur7provG5zhDmQc-c2CM/export?format=tsv&id=1E0I42dpjynzPcg3R9jXpqXvur7provG5zhDmQc-c2CM&gid=1310957812',
+        locale: 'uk-UA',
+        skipDays: null, // array of numbers of days in week where 0 is Sunday, 1 is Monday, ..., 6 is Saturday
+        weeks: 2,
+        startFromMonday: true, // to start week from another day, pass next values: Sunday: false, Monday: true, Saturday: -1
+        eats: [
+            ['breakfast', 'Сніданок'],
+            ['lunch', 'Обід'],
+            ['dinner', 'Вечеря'],
+        ],
+        menuPosition: location.search.slice(1),
+        deleteOnDblClick: true,
+        printBW: true
+    }
+
+    const getDate = date => date.toISOString().substr(0, 10)
+    const getDayName = date => {
+        const name = new Intl.DateTimeFormat(config.locale, { weekday: 'long'}).format(date)
+        return name[0].toUpperCase() + name.substr(1).toLowerCase()
+    }
+    const getPlaceholder = target => target.closest('.placeholder')
+    const getDroppable = target => target.closest('[droppable]')
+    const getPlaceholderInfo = target => {
+        const {eat} = target.closest('.eat').dataset
+        const {date} = target.closest('.day').dataset
+        return {date, eat}
+    }
+
+
+    /* Response structure: [{cat: 'Category Name', items: ['Meal']}] */
+    function useFetch(url) {
+        const [response, setResponse] = React.useState(null)
+        const [loading, setLoading] = React.useState(false)
+
+        React.useEffect(() => {
+            setLoading(true)
+            fetch(url)
+                .then(data => data.json())
+                .then(json => {
+                    setLoading(false)
+                    setResponse(json)
+                })
+        }, [url])
+
+        return [response, loading]
+    }
+
+    function getActualDates(length = 7) {
+        const localDate = new Date()
+        const date = new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60 * 1000)
+        date.setDate(date.getDate() - date.getDay() + config.startFromMonday - 1)
+
+        return Array.from({length}, () => {
+            do date.setDate(date.getDate() + 1)
+            while (config.skipDays?.includes(date.getDay()))
+
+            return getDate(date)
+        })
+    }
+
+    function getInitialPlan(dates) {
+        const plan = JSON.parse(localStorage.getItem("plan") || "{}")
+
+        // remove outdated plans
+        Object.keys(plan).forEach(date => {
+            if (!dates.includes(date)) {
+                delete plan[date]
+            }
+        })
+
+        // set new dates
+        Object.assign(
+            plan,
+            ...dates.filter(date => !plan[date]).map(date => ({[date]: {}}))
+        )
+
+        return plan
+    }
+
+    const Plan = React.createContext(null)
+    const daysInWeek = 7 - (config.skipDays?.length ?? 0)
+    const dates = getActualDates(daysInWeek * config.weeks)
+    const initialPlan = getInitialPlan(dates)
+
+    function PlanService({children}) {
+        let [plan, setPlan] = React.useState(initialPlan)
+        const [meals, isLoading] = useFetch(config.dataUrl)
+        const [colors] = React.useState({})
+        let updateNeeded = false
+
+        meals?.forEach(({cat}, index) => {
+            colors[cat] = index + 1
+        })
+
+        const add = (date, eat, category, title) => {
+            if (plan[date]?.[eat]?.some(meal => meal.title === title && meal.category === category)) return;
+
+            if (!plan[date]) plan[date] = {}
+            if (!plan[date][eat]) plan[date][eat] = []
+
+            plan[date][eat].push({title, category})
+            plan[date][eat] = plan[date][eat].sort((a, b) => colors[a.category] - colors[b.category])
+
+            updateNeeded = true
+            return update
+        }
+
+        const remove = (date, eat, category, title) => {
+            plan[date][eat] = plan[date][eat].filter(meal => meal.title !== title || meal.category !== category)
+
+            updateNeeded = true
+            return update
+        }
+
+        const update = (newPlan) => {
+            if (newPlan) setPlan(newPlan)
+            else if (updateNeeded) setPlan({...plan})
+            updateNeeded = false
+        }
+
+        const save = () => {
+            localStorage.setItem('plan', JSON.stringify(plan))
+        }
+
+        const clear = () => {
+            const emptyPlan = Object.assign({}, ...dates.map(date => ({[date]: {}})))
+            update(emptyPlan)
+            localStorage.removeItem('plan')
+        }
+
+        React.useEffect(() => {
+            save()
+        }, [plan])
+
+        window.service = {plan, meals, dates}
+        return <Plan.Provider value={{plan, meals, isLoading, dates, daysInWeek, colors, add, remove, update, updateNeeded, save, clear}}>
+            {children}
+        </Plan.Provider>
+    }
+
+    function Placeholder({date, eatId}) {
+        const planService = React.useContext(Plan)
+
+        return <div className="placeholder" droppable="true">
+            {planService.plan[date]?.[eatId]?.map(meal => <Meal title={meal.title} category={meal.category} date={date} eat={eatId} />)}
+        </div>
+    }
+
+    function DayTitle({date}) {
+        const day = new Date(date)
+        const dayName = getDayName(day)
+
+        return <div className="day-title">
+            {dayName}
+            <div className="day-date">{day.getDate()}</div>
+        </div>
+    }
+
+    function Eat({eatId, eatTitle, date}) {
+        return <div className={`eat ${eatId}`} data-eat={eatId}>
+            <div className="title">{eatTitle}</div>
+            <Placeholder date={date} eatId={eatId} />
+        </div>
+    }
+
+    function Day({date}) {
+        return <div className="day" data-date={date}>
+            <DayTitle date={date} />
+            {config.eats.map(([eatId, eatTitle]) => <Eat eatId={eatId} eatTitle={eatTitle} date={date} />)}
+        </div>
+    }
+
+    function MealCategoryTitle({title}) {
+        const {setActive} = React.useContext(Collapsable)
+
+        return <div className="category-title" onClick={() => setActive(title)}>
+            {title}
+        </div>;
+    }
+
+    function Meal({title, category, date = null, eat = null}) {
+        const planService = React.useContext(Plan)
+
+        return <div className={`meal color${planService.colors[category]}`} draggable="true"
+                    data-category={category} data-meal={title}
+                    onDoubleClick={() => config.deleteOnDblClick && date && planService.remove(date, eat, category, title)()}>
+            <div className="meal-title">{title}</div>
+        </div>
+    }
+
+    function MealCategoryContainer({meals, category}) {
+        if (!meals?.length) return null
+
+        return <div className="category-container">
+            {meals.map(item => <Meal title={item} category={category} />)}
+        </div>
+    }
+
+    function MealCategory({category, collapsed}) {
+        return <div className={`meal-category ${collapsed ? 'collapsed' : ''}`}>
+            <MealCategoryTitle title={category.cat} />
+            <MealCategoryContainer meals={category.items} category={category.cat} />
+        </div>
+    }
+
+    function Meals() {
+        const {meals} = React.useContext(Plan)
+        if (!meals?.length) return null
+
+        const {isCollapsed} = React.useContext(Collapsable)
+
+        return <div className="meals" droppable="true">
+            {meals.map(category => <MealCategory category={category} collapsed={isCollapsed(category.cat)} />)}
+        </div>
+    }
+
+    function Calendar() {
+        const {dates} = React.useContext(Plan)
+
+        return (
+            <div className="calendar">
+                {dates.map(date => <Day date={date}/>)}
+            </div>
+        )
+    }
+
+    const Collapsable = React.createContext(null)
+    function CollapsableService({children}) {
+        const [active, setActive] = React.useState('')
+
+        const {meals} = React.useContext(Plan)
+        React.useEffect(() => {
+            if (!meals) return;
+            setActive(meals[0]?.cat)
+        }, [meals])
+
+        const isCollapsed = category => category !== active
+
+        return <Collapsable.Provider value={{active, setActive, isCollapsed}}>
+            {children}
+        </Collapsable.Provider>;
+    }
+
+    let setted = 0
+    function App() {
+        const planService = React.useContext(Plan)
+
+        if (planService.isLoading) {
+            return <h1>Loading...</h1>
+        }
+
+        React.useEffect(() => {
+            document.body.style.setProperty('--days-in-week', planService.daysInWeek)
+            if (config.menuPosition) document.body.classList.add(config.menuPosition)
+            if (config.printBW) document.body.classList.add('bw')
+
+            if (!setted) document.addEventListener('keydown', event => {
+                if (!event.ctrlKey) return;
+                const fn = {
+                    s: () => planService.save(),
+                    c: () => planService.clear()
+                }[event.key]
+
+                if (fn) {
+                    fn()
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+            })
+            setted++
+        }, [])
+
+        return (<>
+            <CollapsableService>
+                <Meals/>
+            </CollapsableService>
+            <Calendar/>
+        </>);
+    }
+
+    let dndListeners
+    function DnD({children}) {
+        const planService = React.useContext(Plan)
+
+        let fromMeals
+        const dragStart = event => {
+            // console.log('start', event)
+            if (!event.target.getAttribute('draggable')) return;
+
+            event.dataTransfer.effectAllowed = 'copyMove'
+            event.dataTransfer.setData('meal', event.target.dataset.meal)
+            event.dataTransfer.setData('category', event.target.dataset.category)
+
+            const placeholder = getPlaceholder(event.target)
+            if (placeholder) {
+                const {date, eat} = getPlaceholderInfo(placeholder)
+                event.dataTransfer.setData('date', date)
+                event.dataTransfer.setData('eat', eat)
+                event.dataTransfer.setData('from', 'placeholder')
+                fromMeals = false
+            } else {
+                event.dataTransfer.setData('from', 'meals')
+                fromMeals = true
+            }
+        }
+
+        const drop = event => {
+            // console.log('drop', event)
+            const target = getDroppable(event.target)
+
+            if (!target) return;
+
+            const title = event.dataTransfer.getData('meal')
+            const category = event.dataTransfer.getData('category')
+
+            const from = event.dataTransfer.getData('from')
+            const to = getPlaceholder(target)
+
+            if (to) {
+                const {date, eat} = getPlaceholderInfo(to)
+                planService.add(date, eat, category, title)
+            }
+
+            if (from !== 'meals') {
+                const date = event.dataTransfer.getData('date')
+                const eat = event.dataTransfer.getData('eat')
+
+                const {date: toDate, eat: toEat} = to ? getPlaceholderInfo(to) : {}
+                const samePlace = toDate === date && toEat === eat
+                if (!samePlace && (!to || !event.ctrlKey)) planService.remove(date, eat, category, title)
+            }
+
+            planService.update()
+        }
+
+        const move = event => {
+            if (!getDroppable(event.target)) return event.dataTransfer.dropEffect = 'none';
+
+            event.preventDefault()
+
+            const toPlaceholder = !!getPlaceholder(event.target)
+            if (fromMeals && !toPlaceholder) return event.dataTransfer.dropEffect = 'none';
+
+            event.dataTransfer.dropEffect = toPlaceholder && (fromMeals || event.ctrlKey)
+                ? 'copy'
+                : 'move'
+        }
+
+        if (dndListeners) {
+            document.removeEventListener('dragstart', dndListeners.dragStart)
+            document.removeEventListener('dragover', dndListeners.move)
+            document.removeEventListener('drop', dndListeners.drop)
+        }
+
+        document.addEventListener('dragstart', dragStart)
+        document.addEventListener('dragover', move)
+        document.addEventListener('drop', drop)
+
+        dndListeners = {dragStart, move, drop}
+
+        return children;
+    }
+
+    ReactDOM.render(
+        <PlanService>
+            <DnD>
+                <App/>
+            </DnD>
+        </PlanService>,
+        document.body
+    );
+</script>
+
+
+</html>
