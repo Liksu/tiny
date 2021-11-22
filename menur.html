@@ -271,9 +271,9 @@
             ['lunch', 'Обід'],
             ['dinner', 'Вечеря'],
         ],
-        menuPosition: location.search.slice(1),
+        menuPosition: location.search.slice(1) || 'left', // 'top' or 'left'
         deleteOnDblClick: true,
-        printBW: true
+        printBW: false
     }
 
     const getDate = date => date.toISOString().substr(0, 10)
