@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <title>Current Exchange Rate</title>
+    <style>
+        body {
+            --background-color: white;
+            --step-color: gray;
+            --active-color: skyblue;
+            --arrow-width: 16px;
+            --step-height: 54px;
+            --step-padding-v: 10px;
+            --step-padding-h: 30px;
+            --gap: 10px;
+
+            padding: 0;
+            margin: var(--arrow-width);
+            background-color: var(--background-color);
+        }
+
+        ul {
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: center;
+            height: calc(var(--step-height) - 2px);
+        }
+
+        .step {
+            list-style: none;
+            border-color: var(--step-color);
+            flex-grow: 1;
+            height: var(--step-height);
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+        }
+
+        .step > div {
+            border-color: var(--step-color);
+            background-color: var(--step-color);
+            padding: var(--step-padding-v) var(--step-padding-h);
+            position: relative;
+            flex-grow: 1;
+            height: var(--step-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step.active {
+            border-color: var(--active-color);
+        }
+
+        .step.active > div {
+            background-color: var(--active-color);
+        }
+
+        .step::before, .step::after {
+            content: '';
+            background: transparent;
+            border-style: solid;
+            border-color: inherit;
+            border-width: calc(var(--step-height) / 2) 0 calc(var(--step-height) / 2) var(--arrow-width);
+        }
+
+        .step::before {
+            border-left-color: transparent;
+        }
+
+        .step::after {
+            border-top-color: transparent;
+            border-bottom-color: transparent;
+        }
+
+        .step + .step {
+            margin-left: calc(-1 * (var(--arrow-width) - var(--gap)));
+        }
+
+        .step.first {
+            margin-left: 0;
+        }
+
+        .step.first::before {
+            display: none;
+        }
+
+        .step.last {
+            margin-right: 0;
+        }
+
+        .step.last::after {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            ul {
+                flex-direction: column;
+                height: auto;
+                --width: calc(100vw - 2 * var(--arrow-width));
+                width: calc(var(--width) - 2px);
+            }
+
+            .step {
+                flex-grow: 0;
+                flex-shrink: 0;
+                flex-basis: 100%;
+                flex-direction: column;
+                width: var(--width);
+                height: var(--step-height);
+            }
+
+            .step > div {
+                width: 100%;
+            }
+
+            .step::before, .step::after {
+                border-width: var(--arrow-width) calc(var(--width) / 2) 0 calc(var(--width) / 2);
+                border-color: inherit;
+            }
+
+            .step::before {
+                border-top-color: transparent;
+            }
+
+            .step::after {
+                border-left-color: transparent;
+                border-right-color: transparent;
+            }
+
+            .step + .step {
+                margin-left: 0;
+                margin-top: calc(-1 * (var(--arrow-width) - var(--gap)));
+            }
+        }
+    </style>
+    <style>
+        .lds-ellipsis {
+            display: inline-block;
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .lds-ellipsis div {
+            position: absolute;
+            top: 33px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #fff;
+            animation-timing-function: cubic-bezier(0, 1, 1, 0);
+        }
+
+        .lds-ellipsis div:nth-child(1) {
+            left: 8px;
+            animation: lds-ellipsis1 0.6s infinite;
+        }
+
+        .lds-ellipsis div:nth-child(2) {
+            left: 8px;
+            animation: lds-ellipsis2 0.6s infinite;
+        }
+
+        .lds-ellipsis div:nth-child(3) {
+            left: 32px;
+            animation: lds-ellipsis2 0.6s infinite;
+        }
+
+        .lds-ellipsis div:nth-child(4) {
+            left: 56px;
+            animation: lds-ellipsis3 0.6s infinite;
+        }
+
+        @keyframes lds-ellipsis1 {
+            0% {
+                transform: scale(0);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes lds-ellipsis3 {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(0);
+            }
+        }
+
+        @keyframes lds-ellipsis2 {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(24px, 0);
+            }
+        }
+    </style>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 16px;
+        }
+
+        select {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 16px;
+            border: none;
+            outline: none;
+            background-color: transparent;
+            color: white;
+            width: 80%;
+            height: 100%;
+        }
+
+        select option, select optgroup {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 16px;
+            color: black;
+        }
+
+        #values, select[name=type], .value {
+            display: none;
+        }
+
+        #loader {
+            display: none;
+            margin-top: 6px;
+        }
+
+        #loader[data-state=true] {
+            display: block;
+        }
+
+        .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3848a2;
+        }
+
+        table {
+            --table-border: 1px solid #3848a2;
+            
+            width: 60%;
+            border-collapse: collapse;
+            border-top: var(--table-border);
+        }
+        
+        .right-border {
+            border-right: var(--table-border);
+        }
+        
+        tr {
+            border-bottom: var(--table-border);
+        }
+        
+        td, th {
+            padding: 0.2em 0.5em;
+        }
+        
+        thead {
+            background-color: whitesmoke;
+        }
+        
+        h3 {
+            margin-bottom: 0.5em;
+        }
+        
+        p {
+            margin-top: 0;
+            font-size: 16px;
+        }
+        
+        .formula-text {
+            font-size: 60%;
+        }
+        
+        .converter > div {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+        }
+        
+        .converter .delimiter {
+            font-size: 1.5em;
+        }
+        
+        .converter input {
+            width: 7em;
+            font-size: 1em;
+        }
+        
+        @media (max-width: 480px) {
+            table {
+                width: 100%;
+            }
+            
+            p {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+<ul>
+    <li class="step first active" id="currency">
+        <div>
+            <select name="currency" onchange="onCurrenciesChange()">
+                <option disabled selected value="">--- Select Currencies ---</option>
+                <optgroup label="From UAH">
+                    <option value="UAH:USD">UAH &rarr; USD</option>
+                    <option value="UAH:EUR">UAH &rarr; EUR</option>
+                    <option value="UAH:PLN">UAH &rarr; PLN</option>
+                </optgroup>
+                <optgroup label="From USD">
+                    <option value="USD:UAH">USD &rarr; UAH</option>
+                    <option value="USD:EUR">USD &rarr; EUR</option>
+                    <option value="USD:PLN">USD &rarr; PLN</option>
+                </optgroup>
+                <optgroup label="From EUR">
+                    <option value="EUR:UAH">EUR &rarr; UAH</option>
+                    <option value="EUR:USD">EUR &rarr; USD</option>
+                    <option value="EUR:PLN">EUR &rarr; PLN</option>
+                </optgroup>
+                <optgroup label="From PLN">
+                    <option value="PLN:UAH">PLN &rarr; UAH</option>
+                    <option value="PLN:USD">PLN &rarr; USD</option>
+                    <option value="PLN:EUR">PLN &rarr; EUR</option>
+                </optgroup>
+            </select>
+        </div>
+    </li>
+    <li class="step" id="type">
+        <div>
+            <div data-state="false" id="loader">
+                <div class="lds-ellipsis">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
+            <select name="type" onchange="onTypeChange()">
+                <option value="">--- Select Type ---</option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+                <option value="both">Cash & Bank</option>
+            </select>
+        </div>
+    </li>
+    <li class="step last" id="value">
+        <div>
+            <span class="value">0 CUR</span>
+        </div>
+    </li>
+</ul>
+<div id="values">
+    <table>
+        <thead>
+        <tr>
+            <th colspan="3" class="right-border">Average exchange rate in banks</th>
+            <th colspan="2">Cash rate</th>
+        </tr>
+        <tr>
+            <td>Currency</td>
+            <td>Buy</td>
+            <td class="right-border">Sell</td>
+            <td>Buy</td>
+            <td>Sell</td>
+        </tr>
+        </thead>
+        <tbody>
+        <tr class="values">
+            <td>CUR</td>
+            <td>0</td>
+            <td class="right-border">0</td>
+            <td>0</td>
+            <td>0</td>
+        </tr>
+        </tbody>
+    </table>
+    
+    <div class="formula">
+        <h3>Formula: <span class="formula-text"></span></h3>
+        <p class="formula-value"></p>
+    </div>
+    
+    <div class="converter">
+        <h3>Convert:</h3>
+        <div>
+            <input name="amount" value="0" onchange="recalculate(this.value)" type="number">
+            <span class="currency-from"></span>
+            <span class="delimiter">=</span>
+            <span class="sum"></span>
+            <span class="currency-to"></span>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    const state = {
+        from: null,
+        to: null,
+        type: null,
+        value: null,
+    }
+
+    let data = null
+
+    const loaderEl = document.getElementById('loader')
+    const currencyStepEl = document.getElementById('currency')
+    const typeStepEl = document.getElementById('type')
+    const valueStepEl = document.getElementById('value')
+    const valuesEl = document.getElementById('values')
+    const currencySelectorEl = document.querySelector('select[name=currency]')
+    const typeSelectorEl = document.querySelector('select[name=type]')
+    const valueEl = document.querySelector('.value')
+    const formulaEl = document.querySelector('.formula')
+    const valuesTableEl = document.querySelectorAll('.values td')
+    
+    const converterSumEl = document.querySelector('.converter .sum')
+    const converterCurrencyFromEl = document.querySelector('.converter .currency-from')
+    const converterCurrencyToEl = document.querySelector('.converter .currency-to')
+
+    const format = Intl.NumberFormat(navigator.language, {minimumFractionDigits: 2, maximumFractionDigits: 2}).format
+
+    const steps = {
+        currency: currencyStepEl,
+        type: typeStepEl,
+        value: valueStepEl,
+    }
+
+    const formulas = {
+        cash: '(cash.buy + cash.sell) / 2',
+        bank: '(bank.buy + bank.sell) / 2',
+        both: '((cash.buy + cash.sell) / 2 + (bank.buy + bank.sell) / 2) / 2',
+    }
+    
+    const formulaTexts = {
+        cash: 'Cash average',
+        bank: 'Bank average',
+        both: 'Average of cash average and bank average',
+    }
+
+    function show(el) {
+        el.style.display = 'block'
+    }
+
+    function hide(el) {
+        el.style.display = 'none'
+        if (el.tagName === 'SELECT') {
+            el.value = ''
+        }
+    }
+
+    function toggleLoader(state) {
+        loaderEl.dataset.state = state != null
+            ? state
+            : loaderEl.dataset.state === 'true' ? 'false' : 'true'
+    }
+
+    function resetActive(id) {
+        Object.values(steps).forEach(step => {
+            step.classList.remove('active')
+        })
+        steps[id].classList.add('active')
+        toggleLoader(false)
+
+        hide(valueEl)
+        hide(valuesEl)
+        hide(formulaEl)
+
+        switch (id) {
+            case 'currency':
+                hide(typeSelectorEl)
+                currencySelectorEl.value = ''
+                break
+            case 'type':
+                typeSelectorEl.value = ''
+                break
+            case 'value':
+                show(typeSelectorEl)
+                show(valueEl)
+                show(valuesEl)
+                show(formulaEl)
+                break
+        }
+    }
+
+    function showValue() {
+        resetActive('value')
+
+        const context = {
+            'cash.buy': data[state.from].auction.buy.val,
+            'cash.sell': data[state.from].auction.sell.val,
+            'bank.buy': data[state.from].midbank.buy.val,
+            'bank.sell': data[state.from].midbank.sell.val,
+        }
+
+        const values = [
+            state.from,
+            context['bank.buy'],
+            context['bank.sell'],
+            context['cash.buy'],
+            context['cash.sell'],
+        ]
+
+        valuesTableEl.forEach((el, i) => {
+            el.innerHTML = isNaN(+values[i]) ? values[i] : format(values[i])
+        })
+
+        let displayFormula = formulas[state.type]
+        let calcFormula = formulas[state.type]
+        Object.entries(context).forEach(([key, value]) => {
+            displayFormula = displayFormula.replaceAll(key, format(value))
+            calcFormula = calcFormula.replaceAll(key, value)
+        })
+
+        state.value = eval(calcFormula)
+
+        valueEl.innerHTML = `${format(state.value)} ${state.to}`
+        formulaEl.querySelector('.formula-value').innerHTML = `${displayFormula} = ${format(state.value)} ${state.to}`
+        formulaEl.querySelector('.formula-text').innerHTML = formulaTexts[state.type]
+        
+        recalculate(0)
+    }
+
+    function showType() {
+        show(typeSelectorEl)
+    }
+
+    async function onCurrenciesChange() {
+        resetActive('type')
+        toggleLoader(true)
+
+        const [from, to] = currencySelectorEl.value.split(':')
+        const response = await fetch(`https://minfin.com.ua/api/currency/simple/?base=${to}&list=${from}`)
+
+        data = (await response.json()).data
+        state.from = from
+        state.to = to
+
+        toggleLoader(false)
+        showType()
+    }
+
+    function onTypeChange() {
+        resetActive('value')
+        state.type = typeSelectorEl.value
+        showValue()
+    }
+    
+    function recalculate(value) {
+        const amount = Number(value)
+        converterSumEl.innerHTML = format(amount * state.value)
+        converterCurrencyFromEl.innerHTML = state.from
+        converterCurrencyToEl.innerHTML = state.to
+    }
+</script>
+</html>
