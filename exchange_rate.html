@@ -229,7 +229,11 @@
             color: black;
         }
 
-        #values, select[name=type], .value {
+        #values,
+        select[name=type],
+        .value,
+        .share span,
+        .snapshot-disclaimer {
             display: none;
         }
 
@@ -300,6 +304,33 @@
             font-size: 1em;
         }
         
+        .share {
+            margin-top: 2em;
+        }
+        
+        .share button {
+            font-size: 0.64em;
+            padding: 0.5em;
+        }
+        
+        .snapshot-disclaimer {
+            color: darkred;
+        }
+        
+        .snapshot-disclaimer .date {
+            white-space: nowrap;
+        }
+        
+        .snapshot-disclaimer a {
+            color: darkred;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        
+        .error {
+            color: red;
+        }
+        
         @media (max-width: 480px) {
             table {
                 width: 100%;
@@ -312,6 +343,11 @@
     </style>
 </head>
 <body>
+<div class="snapshot-disclaimer">
+    <h2>You are viewing a snapshot from <span class="date"></span></h2>
+    <a onclick="location.search = ''">Go to current exchange rate</a>
+</div>
+
 <ul>
     <li class="step first active" id="currency">
         <div>
@@ -351,7 +387,7 @@
                 </div>
             </div>
             <select name="type" onchange="onTypeChange()">
-                <option value="">--- Select Type ---</option>
+                <option value="" disabled selected>--- Select Type ---</option>
                 <option value="cash">Cash</option>
                 <option value="bank">Bank</option>
                 <option value="both">Cash & Bank</option>
@@ -394,7 +430,7 @@
         <h3>Formula: <span class="formula-text"></span></h3>
         <p class="formula-value"></p>
     </div>
-    
+
     <div class="converter">
         <h3>Convert:</h3>
         <div>
@@ -404,6 +440,11 @@
             <span class="sum"></span>
             <span class="currency-to"></span>
         </div>
+    </div>
+
+    <div class="share">
+        <button onclick="copyToClipboard()">🔗 Copy to clipboard</button>
+        <span>✅ Copied</span>
     </div>
 </div>
 </body>
@@ -416,6 +457,7 @@
     }
 
     let data = null
+    let context = null
 
     const loaderEl = document.getElementById('loader')
     const currencyStepEl = document.getElementById('currency')
@@ -428,12 +470,20 @@
     const formulaEl = document.querySelector('.formula')
     const valuesTableEl = document.querySelectorAll('.values td')
     
+    const shareButtonEl = document.querySelector('.share button')
+    const shareCopiedEl = document.querySelector('.share span')
+    
+    const converterEl = document.querySelector('.converter')
+    const converterAmountEl = document.querySelector('.converter input')
     const converterSumEl = document.querySelector('.converter .sum')
     const converterCurrencyFromEl = document.querySelector('.converter .currency-from')
     const converterCurrencyToEl = document.querySelector('.converter .currency-to')
 
     const format = Intl.NumberFormat(navigator.language, {minimumFractionDigits: 2, maximumFractionDigits: 2}).format
+    const dateFormat = Intl.DateTimeFormat(navigator.language, {dateStyle: 'short', timeStyle: 'short'}).format
 
+    const errorHTML = '<span class="error">—</span>'
+    
     const steps = {
         currency: currencyStepEl,
         type: typeStepEl,
@@ -476,6 +526,7 @@
         steps[id].classList.add('active')
         toggleLoader(false)
 
+        resetShareButton()
         hide(valueEl)
         hide(valuesEl)
         hide(formulaEl)
@@ -486,6 +537,7 @@
                 currencySelectorEl.value = ''
                 break
             case 'type':
+                hide(typeSelectorEl)
                 typeSelectorEl.value = ''
                 break
             case 'value':
@@ -500,13 +552,6 @@
     function showValue() {
         resetActive('value')
 
-        const context = {
-            'cash.buy': data[state.from].auction.buy.val,
-            'cash.sell': data[state.from].auction.sell.val,
-            'bank.buy': data[state.from].midbank.buy.val,
-            'bank.sell': data[state.from].midbank.sell.val,
-        }
-
         const values = [
             state.from,
             context['bank.buy'],
@@ -516,23 +561,39 @@
         ]
 
         valuesTableEl.forEach((el, i) => {
-            el.innerHTML = isNaN(+values[i]) ? values[i] : format(values[i])
+            const value = values[i]
+            if (!value) {
+                el.innerHTML = errorHTML
+                return
+            }
+            
+            el.innerHTML = isNaN(+value) ? value : format(value)
+            el.style.color = 'inherit'
         })
 
         let displayFormula = formulas[state.type]
         let calcFormula = formulas[state.type]
+        let error = false
         Object.entries(context).forEach(([key, value]) => {
-            displayFormula = displayFormula.replaceAll(key, format(value))
-            calcFormula = calcFormula.replaceAll(key, value)
+            displayFormula = displayFormula.replaceAll(key, () => !value ? (error = true, errorHTML) : format(value))
+            calcFormula = calcFormula.replaceAll(key, value || 0)
         })
 
-        state.value = eval(calcFormula)
+        state.value = error ? null : eval(calcFormula)
 
-        valueEl.innerHTML = `${format(state.value)} ${state.to}`
-        formulaEl.querySelector('.formula-value').innerHTML = `${displayFormula} = ${format(state.value)} ${state.to}`
+        valueEl.innerHTML = error ? errorHTML : `${format(state.value)} ${state.to}`
+        formulaEl.querySelector('.formula-value').innerHTML = `${displayFormula} = ${error ? errorHTML : format(state.value)} ${state.to}`
         formulaEl.querySelector('.formula-text').innerHTML = formulaTexts[state.type]
-        
-        recalculate(0)
+
+        converterAmountEl.disabled = error
+        hide(shareButtonEl)
+
+        if (!error) {
+            show(converterEl)
+            recalculate(converterAmountEl.value)
+        } else {
+            hide(converterEl)
+        }
     }
 
     function showType() {
@@ -550,6 +611,13 @@
         state.from = from
         state.to = to
 
+        context = {
+            'cash.buy': data[state.from].auction.buy.val,
+            'cash.sell': data[state.from].auction.sell.val,
+            'bank.buy': data[state.from].midbank.buy.val,
+            'bank.sell': data[state.from].midbank.sell.val,
+        }
+
         toggleLoader(false)
         showType()
     }
@@ -562,9 +630,228 @@
     
     function recalculate(value) {
         const amount = Number(value)
+        if (isNaN(amount)) return
         converterSumEl.innerHTML = format(amount * state.value)
         converterCurrencyFromEl.innerHTML = state.from
         converterCurrencyToEl.innerHTML = state.to
+        state.amount = amount
+        resetShareButton()
     }
+    
+    function resetShareButton() {
+        hide(shareCopiedEl)
+        show(shareButtonEl)
+        shareButtonEl.disabled = false
+    }
+
+    function makeSnapshot() {
+        if (!context) return
+        const snapshot = {
+            currency: state.from + ':' + state.to,
+            type: state.type,
+            date: new Date().toISOString(),
+            ...context,
+        }
+        
+        if (state.amount) {
+            snapshot.amount = state.amount
+        }
+
+        const uri = Object.entries(snapshot).map(([key, value]) => `${key}=${value}`).join('&')
+        return `${window.location.origin}${window.location.pathname}?${uri}`
+    }
+    
+    async function copyToClipboard() {
+        const snapshot = makeSnapshot()
+        if (!snapshot) return
+        
+        await navigator.clipboard.writeText(snapshot)
+        
+        hide(shareButtonEl)
+        show(shareCopiedEl)
+    }
+    
+    function parseSnapshot() {
+        const params = new URLSearchParams(window.location.search)
+        const snapshot = Object.fromEntries(params)
+        if (!snapshot.currency || !snapshot.type) return
+
+        show(document.querySelector('.snapshot-disclaimer'))
+        document.querySelector('.snapshot-disclaimer .date').innerHTML = dateFormat(new Date(snapshot.date))
+        
+        const [from, to] = snapshot.currency.split(':')
+        state.from = from
+        state.to = to
+        state.type = snapshot.type
+        context = {
+            'cash.buy': snapshot['cash.buy'],
+            'cash.sell': snapshot['cash.sell'],
+            'bank.buy': snapshot['bank.buy'],
+            'bank.sell': snapshot['bank.sell'],
+        }
+        
+        currencySelectorEl.value = snapshot.currency
+        typeSelectorEl.value = snapshot.type
+        resetActive('value')
+        showValue()
+        
+        shareButtonEl.disabled = true
+        currencySelectorEl.disabled = true
+        typeSelectorEl.disabled = true
+        
+        if (snapshot.amount) {
+            converterAmountEl.value = snapshot.amount
+            recalculate(snapshot.amount)
+        }
+    }
+    
+    parseSnapshot()
+</script>
+<script>
+    /*
+    const json = () => ({
+        "data": {
+            "UAH": {
+                "midbank": {
+                    "buy": {
+                        "val": "1.00",
+                        "trend": "0.0000",
+                        "timestamp": null,
+                        "sparkline": "1,1,1,1,1,1,1",
+                        "gcharts": "\/data\/currency\/retail\/uah.rates.full.json",
+                        "strend": 0
+                    },
+                    "sell": {
+                        "val": "1.00",
+                        "trend": "0.0000",
+                        "timestamp": null,
+                        "sparkline": "1,1,1,1,1,1,1",
+                        "gcharts": "\/data\/currency\/retail\/uah.rates.full.json",
+                        "strend": 0
+                    }
+                },
+                "interbank": {
+                    "buy": {
+                        "val": "1.00",
+                        "trend": "0.0000",
+                        "timestamp": null,
+                        "gcharts": "\/data\/currency\/ib\/uah.ib.stock.json"
+                    },
+                    "sell": {
+                        "val": "1.00",
+                        "trend": "0.0000",
+                        "timestamp": null,
+                        "gcharts": "\/data\/currency\/ib\/uah.ib.stock.json"
+                    }
+                },
+                "nbu": {
+                    "buy": {
+                        "val": "1.00",
+                        "trend": "0.0000",
+                        "timestamp": null,
+                        "sparkline": "1,1,1,1,1,1,1",
+                        "gcharts": "\/data\/currency\/nbu\/nbu.uah.stock.json",
+                        "strend": 0
+                    },
+                    "sell": {
+                        "val": "1.00",
+                        "trend": "0.0000",
+                        "timestamp": null,
+                        "sparkline": "1,1,1,1,1,1,1",
+                        "gcharts": "\/data\/currency\/nbu\/nbu.uah.stock.json",
+                        "strend": 0
+                    }
+                },
+                "auction": {
+                    "buy": {
+                        "val": "1.00",
+                        "timestamp": null,
+                        "trend": "-",
+                        "gcharts": "\/data\/currency\/auction\/uah.1000.median.daily.format.json"
+                    },
+                    "sell": {
+                        "val": "1.00",
+                        "timestamp": null,
+                        "trend": "-",
+                        "gcharts": "\/data\/currency\/auction\/uah.1000.median.daily.format.json"
+                    }
+                }
+            },
+            "PLN": {
+                "midbank": {
+                    "buy": {
+                        "val": "9.3000",
+                        "trend": "-0.0600",
+                        "timestamp": "2023-12-21 15:35:03",
+                        "sparkline": "9.3425,9.325,9.35,9.385,9.35,9.445,9.45",
+                        "gcharts": "\/data\/currency\/retail\/pln.rates.full.json",
+                        "strend": 0.1075
+                    },
+                    "sell": {
+                        "val": "9.6000",
+                        "trend": "0.0700",
+                        "timestamp": "2023-12-21 15:35:03",
+                        "sparkline": "9.3425,9.325,9.35,9.385,9.35,9.445,9.45",
+                        "gcharts": "\/data\/currency\/retail\/pln.rates.full.json",
+                        "strend": 0.1075
+                    }
+                },
+                "interbank": {
+                    "buy": {
+                        "val": "-",
+                        "trend": "-"
+                    },
+                    "sell": {
+                        "val": "-",
+                        "trend": "-"
+                    }
+                },
+                "nbu": {
+                    "buy": {
+                        "val": 9.4546,
+                        "trend": 0.02,
+                        "timestamp": "2023-12-21 19:01:43",
+                        "sparkline": "9.4546,9.4346,9.3467,9.3936",
+                        "gcharts": "\/data\/currency\/nbu\/nbu.pln.stock.json",
+                        "strend": -0.061
+                    },
+                    "sell": {
+                        "val": 9.4546,
+                        "trend": 0.02,
+                        "timestamp": "2023-12-21 19:01:43",
+                        "sparkline": "9.4546,9.4346,9.3467,9.3936",
+                        "gcharts": "\/data\/currency\/nbu\/nbu.pln.stock.json",
+                        "strend": -0.061
+                    }
+                },
+                "auction": {
+                    "buy": {
+                        "val": 9.5,
+                        "timestamp": "2023-12-21 20:00:00",
+                        "trend": "-",
+                        "gcharts": "\/data\/currency\/auction\/pln.1000.median.daily.format.json"
+                    },
+                    "sell": {
+                        "val": 9.65,
+                        "timestamp": "2023-12-21 20:00:00",
+                        "trend": "-",
+                        "gcharts": "\/data\/currency\/auction\/pln.1000.median.daily.format.json"
+                    }
+                }
+            }
+        }
+    })
+    const timeout = (result, delay) => new Promise(resolve => setTimeout(() => resolve(result), delay))
+    
+    const n = 2000
+    window.fetch = () => timeout({json}, n)
+
+    currencySelectorEl.value = 'PLN:UAH'
+    currencySelectorEl.onchange()
+    setTimeout(() => {
+        typeSelectorEl.value = 'both'
+        typeSelectorEl.onchange()
+    }, n + 500)
+    */
 </script>
 </html>
