@@ -304,13 +304,10 @@
             font-size: 1em;
         }
         
-        .share {
-            margin-top: 2em;
-        }
-        
-        .share button {
-            font-size: 0.64em;
-            padding: 0.5em;
+        .share {}
+        .share button {}
+        .share span {
+            font-size: 0.8em;
         }
         
         .snapshot-disclaimer {
@@ -331,6 +328,42 @@
             color: red;
         }
         
+        .actions {
+            margin-top: 2em;
+            display: flex;
+            flex-direction: row;
+            gap: 1em;
+            align-items: center;
+        }
+        
+        button {
+            background-color: transparent;
+            color: #3848a2;
+            padding: 0.32em 0.64em;
+            font-size: 0.8em;
+            border-radius: 2px;
+            box-shadow: none;
+            border: 0;
+            outline: 0;
+        }
+        
+        button.filled {
+            background-color: #3848a2;
+            color: white;
+        }
+        
+        button.red {
+            color: white;
+            background-color: darkred;
+            border-color: darkred;
+        }
+        
+        button.subtle {}
+        
+        button.outline {
+            border: 1px solid #3848a2;
+        }
+        
         @media (max-width: 480px) {
             table {
                 width: 100%;
@@ -345,7 +378,7 @@
 <body>
 <div class="snapshot-disclaimer">
     <h2>You are viewing a snapshot from <span class="date"></span></h2>
-    <a onclick="location.search = ''">Go to current exchange rate</a>
+    <a onclick="navigateToCurrent()">Go to current exchange rate</a>
 </div>
 
 <ul>
@@ -443,13 +476,18 @@
         </div>
     </div>
 
-    <div class="share">
-        <button onclick="copyToClipboard()">🔗 Copy to clipboard</button>
-        <span>✅ Copied</span>
+    <div class="actions">
+        <div class="share">
+            <button onclick="copyToClipboard()" class="outline">🔗 Copy to clipboard</button>
+            <span>✅ Copied</span>
+        </div>
+        <button class="outline" onclick="togglePrecise()">Toggle precise</button>
     </div>
 </div>
 </body>
 <script>
+    const supportedCurrencies = ['UAH', 'USD', 'EUR', 'PLN', 'GBP']
+    
     const state = {
         from: null,
         to: null,
@@ -459,6 +497,7 @@
 
     let data = null
     let context = null
+    let usePrecise = false
 
     const loaderEl = document.getElementById('loader')
     const currencyStepEl = document.getElementById('currency')
@@ -483,6 +522,7 @@
 
     const format2 = Intl.NumberFormat(navigator.language, {minimumFractionDigits: 2, maximumFractionDigits: 2}).format
     const format4 = Intl.NumberFormat(navigator.language, {minimumFractionDigits: 4, maximumFractionDigits: 4}).format
+    const formatPrecise = Intl.NumberFormat(navigator.language, {minimumFractionDigits: 2, maximumFractionDigits: 12}).format
     const dateFormat = Intl.DateTimeFormat(navigator.language, {dateStyle: 'short', timeStyle: 'short'}).format
 
     const errorHTML = '<span class="error">—</span>'
@@ -564,10 +604,9 @@
         ]
 
         let format = format2
-        if (values.find(v => v < 1)) {
-            format = format4
-        }
-        
+        if (values.find(v => v < 1)) format = format4
+        if (usePrecise) format = formatPrecise
+
         valuesTableEl.forEach((el, i) => {
             const value = values[i]
             if (!value) {
@@ -601,7 +640,7 @@
             recalculate(converterAmountEl.value)
 
             const reversedRate = 1 / state.value
-            const reversedFormatter = reversedRate < 1 ? format4 : format2
+            const reversedFormatter = usePrecise ? formatPrecise : reversedRate < 1 ? format4 : format2
             reversedValueEl.innerHTML = `${reversedFormatter(reversedRate)} ${state.from}`
         } else {
             reversedValueEl.innerHTML = errorHTML
@@ -625,10 +664,10 @@
         state.to = to
 
         context = {
-            'cash.buy': data[state.from].auction.buy.val,
-            'cash.sell': data[state.from].auction.sell.val,
-            'bank.buy': data[state.from].midbank.buy.val,
-            'bank.sell': data[state.from].midbank.sell.val,
+            'cash.buy': isFinite(data[state.from].auction.buy.val) ? data[state.from].auction.buy.val : null,
+            'cash.sell': isFinite(data[state.from].auction.sell.val) ? data[state.from].auction.sell.val : null,
+            'bank.buy': isFinite(data[state.from].midbank.buy.val) ? data[state.from].midbank.buy.val : null,
+            'bank.sell': isFinite(data[state.from].midbank.sell.val) ? data[state.from].midbank.sell.val : null,
         }
 
         toggleLoader(false)
@@ -688,11 +727,37 @@
         show(shareCopiedEl)
     }
     
-    function parseSnapshot() {
+    async function parseSnapshot() {
         const params = new URLSearchParams(window.location.search)
         const snapshot = Object.fromEntries(params)
-        if (!snapshot.currency || !snapshot.type || !snapshot.date) return
-        if (Array.from(currencySelectorEl.options, o => o.value).indexOf(snapshot.currency) === -1) return
+        
+        if (!snapshot.currency) return
+        const currencyExists = Array.from(currencySelectorEl.options, o => o.value).indexOf(snapshot.currency) > -1
+        if (!currencyExists) {
+            const [from, to] = snapshot.currency.toUpperCase().split(':')
+            if (!from || !to || !/^\w{3}$/.test(from) || !/^\w{3}$/.test(to)) return
+            const additionalOption = createOption(snapshot.currency, `${from} &rarr; ${to}`)
+            currencySelectorEl.prepend(additionalOption)
+        }
+        
+        if (!snapshot.date) {
+            currencySelectorEl.value = snapshot.currency
+            await onCurrenciesChange()
+            
+            if (snapshot.type) {
+                const typeExists = Array.from(typeSelectorEl.options, o => o.value).indexOf(snapshot.type) > -1
+                if (typeExists) {
+                    typeSelectorEl.value = snapshot.type
+                    onTypeChange()
+                }
+            }
+
+            if (snapshot.amount) {
+                converterAmountEl.value = snapshot.amount
+            }
+
+            return
+        }
         
         Object.keys(snapshot).forEach(key => {
             if (snapshot[key] === 'null') snapshot[key] = null
@@ -727,6 +792,50 @@
         }
     }
     
+    function createOption(value, text, attributes) {
+        const option = document.createElement('option')
+        option.value = value
+        option.innerHTML = text
+        
+        if (attributes) Object.entries(attributes).forEach(([key, value]) => {
+            option.setAttribute(key, value)
+        })
+        
+        return option
+    }
+    
+    function prepareCurrencies() {
+        currencySelectorEl.innerHTML = ''
+        
+        const defaultOption = createOption('', '--- Select Currencies ---', {disabled: true, selected: true})
+        currencySelectorEl.appendChild(defaultOption)
+        
+        supportedCurrencies.forEach(from => {
+            const group = document.createElement('optgroup')
+            group.label = `From ${from}`
+
+            supportedCurrencies.forEach(to => {
+                if (to === from) return
+                const option = createOption(`${from}:${to}`, `${from} &rarr; ${to}`)
+                group.appendChild(option)
+            })
+
+            currencySelectorEl.appendChild(group)
+        })
+    }
+    
+    function togglePrecise() {
+        usePrecise = !usePrecise
+        showValue()
+    }
+    
+    function navigateToCurrent() {
+        let params = `currency=${state.from}:${state.to}&type=${state.type}`
+        if (state.amount) params += `&amount=${state.amount}`
+        window.location.search = params
+    }
+    
+    prepareCurrencies()
     parseSnapshot()
 </script>
 </html>
