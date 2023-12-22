@@ -479,7 +479,8 @@
     const converterCurrencyFromEl = document.querySelector('.converter .currency-from')
     const converterCurrencyToEl = document.querySelector('.converter .currency-to')
 
-    const format = Intl.NumberFormat(navigator.language, {minimumFractionDigits: 2, maximumFractionDigits: 2}).format
+    const format2 = Intl.NumberFormat(navigator.language, {minimumFractionDigits: 2, maximumFractionDigits: 2}).format
+    const format4 = Intl.NumberFormat(navigator.language, {minimumFractionDigits: 4, maximumFractionDigits: 4}).format
     const dateFormat = Intl.DateTimeFormat(navigator.language, {dateStyle: 'short', timeStyle: 'short'}).format
 
     const errorHTML = '<span class="error">—</span>'
@@ -560,6 +561,11 @@
             context['cash.sell'],
         ]
 
+        let format = format2
+        if (values.find(v => v < 1)) {
+            format = format4
+        }
+        
         valuesTableEl.forEach((el, i) => {
             const value = values[i]
             if (!value) {
@@ -631,7 +637,7 @@
     function recalculate(value) {
         const amount = Number(value)
         if (isNaN(amount)) return
-        converterSumEl.innerHTML = format(amount * state.value)
+        converterSumEl.innerHTML = format2(amount * state.value)
         converterCurrencyFromEl.innerHTML = state.from
         converterCurrencyToEl.innerHTML = state.to
         state.amount = amount
