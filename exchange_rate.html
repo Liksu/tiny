@@ -657,7 +657,11 @@
             snapshot.amount = state.amount
         }
 
-        const uri = Object.entries(snapshot).map(([key, value]) => `${key}=${value}`).join('&')
+        const uri = Object.entries(snapshot)
+            .filter(([, value]) => value)
+            .map(([key, value]) => `${key}=${value}`)
+            .join('&')
+        
         return `${window.location.origin}${window.location.pathname}?${uri}`
     }
     
@@ -674,7 +678,12 @@
     function parseSnapshot() {
         const params = new URLSearchParams(window.location.search)
         const snapshot = Object.fromEntries(params)
-        if (!snapshot.currency || !snapshot.type) return
+        if (!snapshot.currency || !snapshot.type || !snapshot.date) return
+        if (Array.from(currencySelectorEl.options, o => o.value).indexOf(snapshot.currency) === -1) return
+        
+        Object.keys(snapshot).forEach(key => {
+            if (snapshot[key] === 'null') snapshot[key] = null
+        })
 
         show(document.querySelector('.snapshot-disclaimer'))
         document.querySelector('.snapshot-disclaimer .date').innerHTML = dateFormat(new Date(snapshot.date))
@@ -706,152 +715,5 @@
     }
     
     parseSnapshot()
-</script>
-<script>
-    /*
-    const json = () => ({
-        "data": {
-            "UAH": {
-                "midbank": {
-                    "buy": {
-                        "val": "1.00",
-                        "trend": "0.0000",
-                        "timestamp": null,
-                        "sparkline": "1,1,1,1,1,1,1",
-                        "gcharts": "\/data\/currency\/retail\/uah.rates.full.json",
-                        "strend": 0
-                    },
-                    "sell": {
-                        "val": "1.00",
-                        "trend": "0.0000",
-                        "timestamp": null,
-                        "sparkline": "1,1,1,1,1,1,1",
-                        "gcharts": "\/data\/currency\/retail\/uah.rates.full.json",
-                        "strend": 0
-                    }
-                },
-                "interbank": {
-                    "buy": {
-                        "val": "1.00",
-                        "trend": "0.0000",
-                        "timestamp": null,
-                        "gcharts": "\/data\/currency\/ib\/uah.ib.stock.json"
-                    },
-                    "sell": {
-                        "val": "1.00",
-                        "trend": "0.0000",
-                        "timestamp": null,
-                        "gcharts": "\/data\/currency\/ib\/uah.ib.stock.json"
-                    }
-                },
-                "nbu": {
-                    "buy": {
-                        "val": "1.00",
-                        "trend": "0.0000",
-                        "timestamp": null,
-                        "sparkline": "1,1,1,1,1,1,1",
-                        "gcharts": "\/data\/currency\/nbu\/nbu.uah.stock.json",
-                        "strend": 0
-                    },
-                    "sell": {
-                        "val": "1.00",
-                        "trend": "0.0000",
-                        "timestamp": null,
-                        "sparkline": "1,1,1,1,1,1,1",
-                        "gcharts": "\/data\/currency\/nbu\/nbu.uah.stock.json",
-                        "strend": 0
-                    }
-                },
-                "auction": {
-                    "buy": {
-                        "val": "1.00",
-                        "timestamp": null,
-                        "trend": "-",
-                        "gcharts": "\/data\/currency\/auction\/uah.1000.median.daily.format.json"
-                    },
-                    "sell": {
-                        "val": "1.00",
-                        "timestamp": null,
-                        "trend": "-",
-                        "gcharts": "\/data\/currency\/auction\/uah.1000.median.daily.format.json"
-                    }
-                }
-            },
-            "PLN": {
-                "midbank": {
-                    "buy": {
-                        "val": "9.3000",
-                        "trend": "-0.0600",
-                        "timestamp": "2023-12-21 15:35:03",
-                        "sparkline": "9.3425,9.325,9.35,9.385,9.35,9.445,9.45",
-                        "gcharts": "\/data\/currency\/retail\/pln.rates.full.json",
-                        "strend": 0.1075
-                    },
-                    "sell": {
-                        "val": "9.6000",
-                        "trend": "0.0700",
-                        "timestamp": "2023-12-21 15:35:03",
-                        "sparkline": "9.3425,9.325,9.35,9.385,9.35,9.445,9.45",
-                        "gcharts": "\/data\/currency\/retail\/pln.rates.full.json",
-                        "strend": 0.1075
-                    }
-                },
-                "interbank": {
-                    "buy": {
-                        "val": "-",
-                        "trend": "-"
-                    },
-                    "sell": {
-                        "val": "-",
-                        "trend": "-"
-                    }
-                },
-                "nbu": {
-                    "buy": {
-                        "val": 9.4546,
-                        "trend": 0.02,
-                        "timestamp": "2023-12-21 19:01:43",
-                        "sparkline": "9.4546,9.4346,9.3467,9.3936",
-                        "gcharts": "\/data\/currency\/nbu\/nbu.pln.stock.json",
-                        "strend": -0.061
-                    },
-                    "sell": {
-                        "val": 9.4546,
-                        "trend": 0.02,
-                        "timestamp": "2023-12-21 19:01:43",
-                        "sparkline": "9.4546,9.4346,9.3467,9.3936",
-                        "gcharts": "\/data\/currency\/nbu\/nbu.pln.stock.json",
-                        "strend": -0.061
-                    }
-                },
-                "auction": {
-                    "buy": {
-                        "val": 9.5,
-                        "timestamp": "2023-12-21 20:00:00",
-                        "trend": "-",
-                        "gcharts": "\/data\/currency\/auction\/pln.1000.median.daily.format.json"
-                    },
-                    "sell": {
-                        "val": 9.65,
-                        "timestamp": "2023-12-21 20:00:00",
-                        "trend": "-",
-                        "gcharts": "\/data\/currency\/auction\/pln.1000.median.daily.format.json"
-                    }
-                }
-            }
-        }
-    })
-    const timeout = (result, delay) => new Promise(resolve => setTimeout(() => resolve(result), delay))
-    
-    const n = 2000
-    window.fetch = () => timeout({json}, n)
-
-    currencySelectorEl.value = 'PLN:UAH'
-    currencySelectorEl.onchange()
-    setTimeout(() => {
-        typeSelectorEl.value = 'both'
-        typeSelectorEl.onchange()
-    }, n + 500)
-    */
 </script>
 </html>
