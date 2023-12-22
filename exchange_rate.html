@@ -429,6 +429,7 @@
     <div class="formula">
         <h3>Formula: <span class="formula-text"></span></h3>
         <p class="formula-value"></p>
+        <p class="reversed">Reversed rate: <span class="reversed-value"></span></p>
     </div>
 
     <div class="converter">
@@ -469,6 +470,7 @@
     const valueEl = document.querySelector('.value')
     const formulaEl = document.querySelector('.formula')
     const valuesTableEl = document.querySelectorAll('.values td')
+    const reversedValueEl = document.querySelector('.reversed-value')
     
     const shareButtonEl = document.querySelector('.share button')
     const shareCopiedEl = document.querySelector('.share span')
@@ -597,7 +599,12 @@
         if (!error) {
             show(converterEl)
             recalculate(converterAmountEl.value)
+
+            const reversedRate = 1 / state.value
+            const reversedFormatter = reversedRate < 1 ? format4 : format2
+            reversedValueEl.innerHTML = `${reversedFormatter(reversedRate)} ${state.from}`
         } else {
+            reversedValueEl.innerHTML = errorHTML
             hide(converterEl)
         }
     }
