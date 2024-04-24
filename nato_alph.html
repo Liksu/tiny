@@ -148,7 +148,7 @@
             ?? digits[char]
             ?? format.special(checkSpecial(char, index, array))
             ?? format.symbols(char)
-            ?? format.space()
+            ?? format.space(char)
             ?? char
         )
         .join(' ')
