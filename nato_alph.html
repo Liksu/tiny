@@ -104,6 +104,10 @@
         '|': 'Pipe',
         '~': 'Tilde',
         '`': 'Backtick',
+        '§': 'Section',
+        '°': 'Degree',
+        '\n': 'New line',
+        '\t': 'Tabulation',
     }
 </script>
 <script>
@@ -133,25 +137,47 @@
         },
     }
     
-    const checkSpecial = (char, index, text) => synonyms[char]?.check?.(char, index, text) ? synonyms[char].value : null
-    const format = {
-        space: char => char === ' ' ? '(Space)' : null,
-        special: char => char ? `[${char}]` : null,
-        symbols: char => symbols[char] ? `[${symbols[char]}]` : null,
-    }
-    
     const encodeText = text => text
-        .toLowerCase()
-        .split('')
-        .map((char, index, array) =>
-               letters[char]
-            ?? digits[char]
-            ?? format.special(checkSpecial(char, index, array))
-            ?? format.symbols(char)
-            ?? format.space(char)
-            ?? char
-        )
-        .join(' ')
+        .split('\n\n')
+        .map(segment => segment
+            .toLowerCase()
+            .split('')
+            // classify each character and encode it
+            .map((char, index, array) => {
+                if (letters[char]) return { type: 'letter', value: letters[char] }
+                if (digits[char]) return { type: 'digit', value: digits[char] }
+    
+                if (synonyms[char]?.check?.(char, index, array)) return { type: 'special', value: synonyms[char].value }
+    
+                if (symbols[char]) return { type: 'symbol', value: symbols[char] }
+                if (isSpace(char)) return { type: 'space', value: char }
+    
+                return { type: null, value: char }
+            })
+            // format the encoded text and prepare it for correct joining
+            .map(({type, value}, index, text) => {
+                if (!type) return value
+    
+                switch (type) {
+                    case 'letter':
+                    case 'digit':
+                        break
+                    case 'special':
+                    case 'symbol':
+                        value = `[${value}]`
+                        break
+                    case 'space':
+                        if (value === ' ') value = '(Space)'
+                        break
+                }
+    
+                // always add a space before symbol except for the first character and 
+                const prefix = index && text[index - 1].type ? ' ' : ''
+                const suffix = index < text.length - 1 && !text[index + 1].type ? ' ' : ''
+                return `${prefix}${value}${suffix}`
+            })
+            .join('')
+        ).join('\n\n')
     
     const update = () => {
         const text = input.value.trim()
