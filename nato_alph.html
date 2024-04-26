@@ -10,7 +10,13 @@
 
 <div class="container text-center">
     <div class="row">
-        <h3>NATO/ICAO phonetic alphabet</h3>
+        <h3 class="offset-3 col-6">NATO/ICAO phonetic alphabet</h3>
+        <div class="col-3 float-end text-end">
+            <div class="form-check form-switch d-flex justify-content-end gap-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="alphabetSwitch">
+                <label class="form-check-label" for="alphabetSwitch">A as Apple</label>
+            </div>
+        </div>
     </div>
     <div class="row">
         <div class="col-md-6">
@@ -30,6 +36,8 @@
 
     const input = document.getElementById('input')
     const output = document.getElementById('output')
+    const useApple = document.getElementById('alphabetSwitch')
+    if (query.has('apple')) useApple.checked = query.get('apple') === 'true'
 
     const letters = {
         'a': 'Alpha',
@@ -58,6 +66,34 @@
         'x': 'X-ray',
         'y': 'Yankee',
         'z': 'Zulu',
+    }
+    const apple = {
+        'a': 'Apple',
+        'b': 'Butter',
+        'c': 'Charlie',
+        'd': 'David',
+        'e': 'Edward',
+        'f': 'Freddy',
+        'g': 'George',
+        'h': 'Harry',
+        'i': 'Ink',
+        'j': 'John',
+        'k': 'King',
+        'l': 'London',
+        'm': 'Mother',
+        'n': 'Nuts',
+        'o': 'Orange',
+        'p': 'Purple',
+        'q': 'Queen',
+        'r': 'Robert',
+        's': 'Sugar',
+        't': 'Tommy',
+        'u': 'Uncle',
+        'v': 'Victor',
+        'w': 'William',
+        'x': 'X-ray',
+        'y': 'Yellow',
+        'z': 'Zebra',
     }
     const digits = {
         '0': 'Zero',
@@ -144,6 +180,7 @@
             .split('')
             // classify each character and encode it
             .map((char, index, array) => {
+                if (useApple.checked && apple[char]) return { type: 'letter', value: `${char.toUpperCase()} as ${apple[char]}` }
                 if (letters[char]) return { type: 'letter', value: letters[char] }
                 if (digits[char]) return { type: 'digit', value: digits[char] }
     
@@ -172,7 +209,8 @@
                 }
     
                 // always add a space before symbol except for the first character and 
-                const prefix = index && text[index - 1].type ? ' ' : ''
+                let prefix = index && text[index - 1].type ? ' ' : ''
+                if (useApple.checked && prefix) prefix = ', '
                 const suffix = index < text.length - 1 && !text[index + 1].type ? ' ' : ''
                 return `${prefix}${value}${suffix}`
             })
@@ -186,9 +224,12 @@
         if (!text) return
 
         query.set('text', text)
+        if (useApple.checked || query.has('apple')) query.set('apple', useApple.checked)
         window.history.pushState({}, '', `${window.location.pathname}?${query}`)
     }
+    
     input.addEventListener('keyup', update)
+    useApple.addEventListener('change', update)
 
     const passedTextKey = ['text', 'q', 's', 'query', 'search', 'string', 'txt', 't', 'input'].find(key => query.get(key))
     if (passedTextKey) input.value = query.get(passedTextKey)
