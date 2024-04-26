@@ -210,7 +210,7 @@
     
                 // always add a space before symbol except for the first character and 
                 let prefix = index && text[index - 1].type ? ' ' : ''
-                if (useApple.checked && prefix) prefix = ', '
+                if (useApple.checked && prefix && text[index - 1].type === 'letter') prefix = ', '
                 const suffix = index < text.length - 1 && !text[index + 1].type ? ' ' : ''
                 return `${prefix}${value}${suffix}`
             })
