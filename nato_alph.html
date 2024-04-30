@@ -180,7 +180,7 @@
             .split('')
             // classify each character and encode it
             .map((char, index, array) => {
-                if (useApple.checked && apple[char]) return { type: 'letter', value: `${char.toUpperCase()} as ${apple[char]}` }
+                if (useApple.checked && apple[char]) return { type: 'letter', value: `${char.toUpperCase()} as in ${apple[char]}` }
                 if (letters[char]) return { type: 'letter', value: letters[char] }
                 if (digits[char]) return { type: 'digit', value: digits[char] }
     
