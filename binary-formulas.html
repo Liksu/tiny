@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Binary Formulas</title>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="http://a5hik.github.io/ng-sortable/dist/ng-sortable.min.css">
+    <link rel="stylesheet" type="text/css" href="http://a5hik.github.io/ng-sortable/dist/ng-sortable.style.min.css">
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.7/angular.min.js"></script>
+    <script src="http://a5hik.github.io/ng-sortable/dist/ng-sortable.js"></script>
+
+    <style>
+        .separate {
+            border-left: 1px dotted navy;
+        }
+        .highlight {
+            font-weight: bold;
+        }
+        .first:before {
+            content: "\e119";
+            font-family: 'Glyphicons Halflings';
+            line-height: 1;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            float: left;
+            margin-left: -15px;
+            margin-top: 10px;
+            cursor: ns-resize;
+        }
+        .cell {
+            display: inline-block;
+        }
+        .handle {
+            width: 1em;
+            margin-left: 4px;
+        }
+        .cell3 {
+            width: 30%;
+        }
+        .cell6 {
+            width: 60%;
+        }
+        .remove-place {
+            width: 5%;
+            cursor: pointer;
+        }
+        .remove {
+            color: darkred;
+        }
+        .titles > .form-control {
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            height: 24px;
+        }
+        .as-sortable-item {
+            border: 0;
+        }
+    </style>
+</head>
+
+<body ng-app="app">
+<div class="container-fluid" ng-controller="ctrl">
+
+    <div class="row">
+        <form class="form-horizontal col-md-6" as-sortable="sortOptions" ng-model="data.flags">
+            <h3>flags:</h3>
+            <div class="form-group titles">
+                <div class="cell handle"></div>
+                <div class="cell cell3 form-control">flag name</div>
+                <div class="cell cell3 form-control">true text</div>
+                <div class="cell cell3 form-control">false text</div>
+            </div>
+            <div class="form-group" ng-repeat="flag in data.flags" as-sortable-item>
+                <div class="cell handle" as-sortable-item-handle>
+                    <span class="glyphicon glyphicon-resize-vertical"></span>
+                </div>
+                <div class="cell cell3">
+                    <input class="form-control" ng-model="flag.name">
+                </div>
+                <div class="cell cell3">
+                    <input class="form-control" ng-model="flag.trueLabel">
+                </div>
+                <div class="cell cell3">
+                    <input class="form-control" ng-model="flag.falseLabel">
+                </div>
+                <div class="cell remove-place" ng-click="data.flags.splice($index, 1)">
+                    <span class="glyphicon glyphicon-remove remove"></span>
+                </div>
+            </div>
+
+            <button ng-click="data.flags.push({name: '', trueLabel: 'true', falseLabel: 'false'})">Add flag</button>
+        </form>
+
+        <form class="form-horizontal col-md-6" as-sortable="sortOptions" ng-model="data.formulas">
+            <h3>formulas:</h3>
+            <div class="form-group titles">
+                <div class="cell handle"></div>
+                <div class="cell cell3 form-control">formula name</div>
+                <div class="cell cell6 form-control">formula</div>
+            </div>
+            <div class="form-group" ng-repeat="formula in data.formulas" as-sortable-item>
+                <div class="cell handle" as-sortable-item-handle>
+                    <span class="glyphicon glyphicon-resize-vertical"></span>
+                </div>
+                <div class="cell cell3">
+                    <input class="form-control" ng-model="formula.name">
+                </div>
+                <div class="cell cell6">
+                    <input class="form-control" ng-model="formula.formula" ng-model-options="{debounce: 500}">
+                </div>
+                <div class="cell remove-place" ng-click="data.formulas.splice($index, 1)">
+                    <span class="glyphicon glyphicon-remove remove"></span>
+                </div>
+            </div>
+
+            <button ng-click="data.formulas.push({name: '', formula: ''})">Add formula</button>
+        </form>
+    </div>
+    <div class="row">
+        <div class="col-md-12 text-right">
+            <button type="button" class="btn btn-link btn-xs" style="font-size: 50%; color: red" ng-click="reset()">reset</button>
+            <button type="button" class="btn btn-link" ng-click="save()">Save</button>
+            <button type="button" class="btn btn-link" ng-click="load()">Restore</button>
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="row">
+        <div class="col-md-9">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th ng-repeat="flag in data.flags">{{flag.name}}</th>
+                    <td ng-repeat="formula in data.formulas" ng-class="{separate: $first}">{{formula.name}}</td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr ng-repeat="row in lines track by $index">
+                    <td ng-repeat="cell in row track by $index" ng-class="{separate: $index == data.flags.length, highlight: cell && $index >= data.flags.length}">{{cell}}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    angular.module('app', ['as.sortable'])
+        .controller('ctrl', function($scope) {
+            const getLines = flags => {
+                const n = flags.length;
+                const s = Array.from(Array(n), () => '0');
+                let lines = Array.from(
+                    Array(Math.pow(2, n)),
+                    (_, i) => s.concat(i.toString(2).split('')).map(i => !!+i).slice(-n)
+                );
+                const flagsNames = flags.map((flag, i) => flag.name || `i${i}`);
+                lines = lines.map(row => {
+                    const results = [];
+                    $scope.data.flags.forEach((flag, i) => {
+                        results.push(row[i] ? flag.trueLabel : flag.falseLabel);
+                    });
+                    $scope.data.formulas.forEach(formula => {
+                        let fn = () => '';
+                        try {
+                            fn = new Function(flagsNames.join(','), 'return ' + formula.formula);
+                            fn = fn.apply(null, row);
+                        } catch(e) {}
+                        results.push(fn ? formula.name : '');
+                    });
+                    return results;
+                });
+                return lines;
+            };
+
+            $scope.lines = [];
+            $scope.$watch('data', () => {
+                $scope.lines = getLines($scope.data.flags);
+            }, true);
+
+            $scope.data = {
+                flags: [
+                    {name: 'A', trueLabel: '1', falseLabel: '0'},
+                    {name: 'B', trueLabel: '1', falseLabel: '0'},
+                ],
+                formulas: [
+                    {name: 'AND', formula: 'A & B'},
+                    {name: 'OR', formula: 'A | B'},
+                    {name: 'XOR', formula: 'A ^ B'}
+                ]
+            };
+
+            $scope.save = () => {
+                localStorage.setItem('compareState', JSON.stringify($scope.data));
+            };
+            
+            $scope.load = () => {
+                let json = localStorage.getItem('compareState');
+                if (!json) return;
+                $scope.data = JSON.parse(json);
+            };
+            
+            $scope.reset = () => {
+                localStorage.setItem('compareState', '');
+                location.reload();
+            };
+
+            $scope.load();
+
+            $scope.sortOptions = {
+                accept: function (sourceItemHandleScope, destSortableScope) {
+                    return sourceItemHandleScope.itemScope.sortableScope.$id === destSortableScope.$id;
+                }
+            };
+        })
+</script>
+</html>
