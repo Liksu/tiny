@@ -142,8 +142,8 @@
         '`': 'Backtick',
         '§': 'Section',
         '°': 'Degree',
-        '\n': 'New line',
-        '\t': 'Tabulation',
+        '\n': { text: 'New line', postfix: '\n' },
+        '\t': { text: 'Tabulation', prefix: '\t' },
     }
 </script>
 <script>
@@ -201,7 +201,9 @@
                         break
                     case 'special':
                     case 'symbol':
-                        value = `[${value}]`
+                        value = typeof value === 'string'
+                            ? `[${value}]`
+                            : `${value.prefix ?? ''}[${value.text}]${value.postfix ?? ''}`
                         break
                     case 'space':
                         if (value === ' ') value = '(Space)'
@@ -215,6 +217,7 @@
                 return `${prefix}${value}${suffix}`
             })
             .join('')
+            .replace(/\n +/g, '\n')
         ).join('\n\n')
     
     const update = () => {
